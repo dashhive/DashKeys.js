@@ -6,21 +6,18 @@
   "bin": {
     "dashkeys": "bin/dashkeys.js"
   },
-  "browser": {
-    "./node/crypto.js": "./browser/fake.js",
-    "./node/sha256.js": "./browser/fake.js"
-  },
   "files": [
-    "browser/",
     "dashkeys.js",
-    "index.js"
+    "index.js",
+    "lib/"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "doc": "npx jsdoc@3.x --configure ./jsdoc.conf.json --destination ./docs --package ./package.json --readme ./README.md --access all --private --recurse ./lib/",
-    "fmt": "npx -p prettier@2.x -- prettier -w '**/*.{js,md}'",
+    "fmt": "npx -p prettier@2.x -- prettier -w '**/*.{html,js,md}'",
     "lint": "npx -p typescript@4.x -- tsc -p ./jsconfig.json",
-    "prepublish": "npx -p jswt@1.x -- reexport"
+    "prepublish": "npx -p jswt@1.x -- reexport",
+    "version": "npm version -m \"chore(release): bump to v%s\""
   },
   "repository": {
     "type": "git",
@@ -46,8 +43,8 @@
   },
   "homepage": "https://github.com/dashhive/dashkeys.js#readme",
   "dependencies": {
+    "@dashincubator/base58check": "^1.1.1",
     "@dashincubator/ripemd160": "^2.3.0",
-    "@root/base58check": "^1.0.0",
-    "secp256k1": "^4.0.3"
+    "@dashincubator/secp256k1": "^1.7.1-0"
   }
 }

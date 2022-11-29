@@ -1,0 +1,26 @@
+Open the Inspector Console!
+
+<script src="https://unpkg.com/@dashincubator/base58check/base58check.js"></script>
+<script src="https://unpkg.com/@dashincubator/secp256k1/secp256k1.js"></script>
+<script src="https://unpkg.com/@dashincubator/ripemd160/ripemd160.js"></script>
+
+<!-- script src="https://unpkg.com/dashkeys/dashkeys.js"></script -->
+<script src="./dashkeys.js"></script>
+<script>
+  (function () {
+    "use strict";
+
+    async function main() {
+      let wif = await DashKeys.generate();
+      let addr = await DashKeys.wifToAddr(wif);
+
+      console.log("DEBUG WIF:", wif);
+      console.log("DEBUG Pay Addr:", addr);
+      console.log("PASS");
+    }
+
+    main().catch(function (e) {
+      console.error(e);
+    });
+  })();
+</script>

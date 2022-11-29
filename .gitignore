@@ -1,3 +1,5 @@
+*.wif
+
 # Logs
 logs
 *.log

@@ -3,3 +3,8 @@
 // DO NOT EDIT
 
 module.exports = require("./lib/dashkeys.js")
+
+// these typedef reexports will be available to dependent packages
+/**
+ * @typedef {import('./bin/dashkeys.js').FsStoreConfig} FsStoreConfig
+ */

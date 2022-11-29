@@ -2,3 +2,7 @@
 // DO NOT EDIT
 
 // global types (DO NOT include in `package.json.files`)
+
+/**
+ * N/A - see reexports in 'index.js'
+ */
