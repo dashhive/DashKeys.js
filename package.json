@@ -1,0 +1,53 @@
+{
+  "name": "dashkeys",
+  "version": "0.1.0",
+  "description": "Generate, validate, create, and convert WIFs and PayAddress.",
+  "main": "index.js",
+  "bin": {
+    "dashkeys": "bin/dashkeys.js"
+  },
+  "browser": {
+    "./node/crypto.js": "./browser/fake.js",
+    "./node/sha256.js": "./browser/fake.js"
+  },
+  "files": [
+    "browser/",
+    "dashkeys.js",
+    "index.js"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "doc": "npx jsdoc@3.x --configure ./jsdoc.conf.json --destination ./docs --package ./package.json --readme ./README.md --access all --private --recurse ./lib/",
+    "fmt": "npx -p prettier@2.x -- prettier -w '**/*.{js,md}'",
+    "lint": "npx -p typescript@4.x -- tsc -p ./jsconfig.json",
+    "prepublish": "npx -p jswt@1.x -- reexport"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dashhive/dashkeys.js.git"
+  },
+  "keywords": [
+    "dash",
+    "digital",
+    "cash",
+    "dashcore",
+    "private",
+    "key",
+    "public",
+    "wallet",
+    "address",
+    "p2pkh",
+    "base58check"
+  ],
+  "author": "AJ ONeal <aj@therootcompany.com> (https://throotcompany.com/)",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/dashhive/dashkeys.js/issues"
+  },
+  "homepage": "https://github.com/dashhive/dashkeys.js#readme",
+  "dependencies": {
+    "@dashincubator/ripemd160": "^2.3.0",
+    "@root/base58check": "^1.0.0",
+    "secp256k1": "^4.0.3"
+  }
+}
