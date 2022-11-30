@@ -43,7 +43,7 @@
   },
   "homepage": "https://github.com/dashhive/dashkeys.js#readme",
   "dependencies": {
-    "@dashincubator/base58check": "^1.1.1",
+    "@dashincubator/base58check": "^1.2.0",
     "@dashincubator/ripemd160": "^2.3.0",
     "@dashincubator/secp256k1": "^1.7.1-0"
   }

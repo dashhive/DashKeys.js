@@ -51,10 +51,10 @@
   // https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
   // https://docs.dash.org/en/stable/developers/testnet.html
   // "48" for mainnet, "8c" for testnet, '00' for bitcoin
-  DashKeys.pubKeyHashVersion = "4c";
+  //DashKeys.pubKeyHashVersion = "4c";
 
   // "cc" for mainnet, "ef" for testnet, '80' for bitcoin
-  DashKeys.privateKeyVersion = "cc";
+  //DashKeys.privateKeyVersion = "cc";
 
   // https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
   // https://docs.dash.org/en/stable/developers/testnet.html
@@ -68,71 +68,73 @@
   DashKeys.generate = async function (opts) {
     let privKey = Secp256k1.utils.randomPrivateKey();
 
-    let hex = DashKeys._bufferToHex(privKey);
-    let wif = await b58c.encode({
-      version: opts?.version,
-      privateKey: hex,
-      compressed: true,
-    });
-
+    let wif = await DashKeys.privateKeyToWif(privKey, opts);
     return wif;
   };
 
   /**
-   * @param {String} addrOrWif - pay addr or private key wif
-   * @param {Object} opts
-   * @param {Boolean} opts.verify - 'false' to skip verification (default: 'true')
+   * @param {Uint8Array} privKey
+   * @param {Object} [opts]
+   * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
+   * @returns {Promise<String>}
    */
-  DashKeys.decode = async function (addrOrWif, opts) {
-    let parts = await b58c.decode(addrOrWif);
-    if (false !== opts?.verify) {
-      parts = await b58c.verify(addrOrWif);
-    }
-    return parts;
+  DashKeys.privateKeyToWif = async function (privKey, opts) {
+    let privKeyHex = DashKeys._uint8ArrayToHex(privKey);
+    let decoded = {
+      version: opts?.version,
+      privateKey: privKeyHex,
+    };
+
+    let wif = await b58c.encode(decoded);
+    return wif;
   };
 
-  /**
-   * @param {String} addrOrWif - pay address or private key
-   * @returns {Promise<Boolean>}
-   * TODO separate functions for verifying PayAddr vs WIF
-   */
-  DashKeys.verify = async function (addrOrWif) {
-    await b58c.verify(addrOrWif);
-    return true;
-  };
+  //
+  // Base58Check / Uint8Array Conversions
+  //
 
   /**
    * @param {String} wif - private key
+   * @param {Object} [opts]
+   * @param {String} [opts.version]
    * @returns {Promise<String>}
    */
-  DashKeys.wifToAddr = async function (wif) {
-    let parts = await b58c.verify(wif);
+  DashKeys.wifToAddr = async function (wif, opts) {
+    let privBuf = await DashKeys._wifToPrivateKey(wif);
 
-    let privBuf = new Uint8Array(32);
-    for (let i = 0; i < parts.privateKey.length; i += 2) {
-      privBuf[i] = parts.privateKey.slice(i, i + 2);
-    }
+    let isCompressed = false;
+    let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+    let pubKeyHash = await DashKeys.publicKeyToPubKeyHash(pubBuf);
+    let pubKeyHashHex = DashKeys._uint8ArrayToHex(pubKeyHash);
 
-    let pubBuf = Secp256k1.getPublicKey(privBuf);
-    let pubKeyHex = await DashKeys._bufferToPubKeyHash(pubBuf);
     let addr = await b58c.encode({
-      pubKeyHash: pubKeyHex,
-      compressed: true,
+      version: opts?.version,
+      pubKeyHash: pubKeyHashHex,
     });
 
     return addr;
   };
 
   /**
-   * @param {Uint8Array|Buffer} buf
-   * @returns {Promise<String>} - normal Pay Address (Base58Check for p2pkh)
+   * @param {String} wif - private key
+   * @returns {Promise<Uint8Array>}
    */
-  DashKeys._bufferToPubKeyHash = async function (buf) {
+  DashKeys._wifToPrivateKey = async function (wif) {
+    let b58cWif = b58c.decode(wif);
+    let privateKey = DashKeys._hexToUint8Array(b58cWif.privateKey);
+    return privateKey;
+  };
+
+  /**
+   * @param {Uint8Array|Buffer} buf
+   * @returns {Promise<Uint8Array>} - pubKeyHash buffer (no magic byte or checksum)
+   */
+  DashKeys.publicKeyToPubKeyHash = async function (buf) {
     let shaBuf = await sha256sum(buf);
 
     let ripemd = RIPEMD160.create();
     ripemd.update(shaBuf);
-    let hash = ripemd.digest("hex");
+    let hash = ripemd.digest();
 
     return hash;
   };
@@ -142,16 +144,38 @@
    * @param {Buffer|Uint8Array} buf
    * @returns {String} - hex
    */
-  DashKeys._bufferToHex = function (buf) {
+  DashKeys._uint8ArrayToHex = function (buf) {
     /** @type {Array<String>} */
     let hex = [];
 
     buf.forEach(function (b) {
-      let c = b.toString(16).padStart(2, "0");
-      hex.push(c);
+      let h = b.toString(16);
+      h = h.padStart(2, "0");
+      hex.push(h);
     });
 
     return hex.join("");
+  };
+
+  /**
+   * Hex to JS Buffer that works in browsers and Little-Endian CPUs
+   * (which is most of the - ARM, x64, x86, WASM, etc)
+   * @param {String} hex
+   * @returns {Uint8Array} - JS Buffer (Node and Browsers)
+   */
+  DashKeys._hexToUint8Array = function (hex) {
+    let len = hex.length / 2;
+    let buf = new Uint8Array(len);
+
+    let index = 0;
+    for (let i = 0; i < hex.length; i += 2) {
+      let c = hex.slice(i, i + 2);
+      let b = parseInt(c, 16);
+      buf[index] = b;
+      index += 1;
+    }
+
+    return buf;
   };
 
   if ("undefined" !== typeof module) {
