@@ -1,6 +1,6 @@
 {
   "name": "dashkeys",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Generate, validate, create, and convert WIFs and PayAddress.",
   "main": "index.js",
   "bin": {
