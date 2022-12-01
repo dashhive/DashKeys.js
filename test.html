@@ -11,12 +11,27 @@ Open the Inspector Console!
     "use strict";
 
     async function main() {
-      let wif = await DashKeys.generate();
-      let addr = await DashKeys.wifToAddr(wif);
+      //let wif = await DashKeys.generate();
+      let privateHex =
+        "647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d";
+      let privateKey = DashKeys._hexToUint8Array(privateHex);
+      console.log("DEBUG Private Key:", privateHex);
 
+      let checkWif = "XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec";
+      let wif = await DashKeys.privateKeyToWif(privateKey);
+      if (wif !== checkWif) {
+        throw new Error(`'${wif}' does not match the expected '${checkWif}'`);
+      }
       console.log("DEBUG WIF:", wif);
+
+      let checkAddr = "Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ";
+      let addr = await DashKeys.wifToAddr(wif);
+      if (addr !== checkAddr) {
+        throw new Error(`'${addr}' does not match the expected '${checkAddr}'`);
+      }
       console.log("DEBUG Pay Addr:", addr);
-      console.log("PASS");
+
+      console.info("PASS");
     }
 
     main().catch(function (e) {
