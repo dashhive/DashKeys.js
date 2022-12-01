@@ -102,7 +102,7 @@
   DashKeys.wifToAddr = async function (wif, opts) {
     let privBuf = await DashKeys._wifToPrivateKey(wif);
 
-    let isCompressed = false;
+    let isCompressed = true;
     let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
     let pubKeyHash = await DashKeys.publicKeyToPubKeyHash(pubBuf);
     let pubKeyHashHex = DashKeys._uint8ArrayToHex(pubKeyHash);
