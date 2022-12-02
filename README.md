@@ -20,6 +20,23 @@ npm install --location=global dashkeys
 
 **Usage**
 
+```txt
+Usage:
+    dashkeys generate                create a new WIF
+    dashkeys address <./file.wif>    convert WIF to Pay Addr
+    dashkeys inspect <addr-or-file>  decode base58check
+    dashkeys verify <addr-or-file>   validate checksum
+
+    dashkeys help     show this menu
+    dashkeys version  show version
+
+Global Flags:
+    --json             machine-friendly json to stdout
+    --unsafe           no private key mask, accept as string
+```
+
+**Example**
+
 ```sh
 dashkeys generate
 ```
