@@ -7,8 +7,7 @@
     "dashkeys": "bin/dashkeys.js"
   },
   "files": [
-    "dashkeys.js",
-    "index.js",
+    "*.js",
     "lib/"
   ],
   "scripts": {
