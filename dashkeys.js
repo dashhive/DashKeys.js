@@ -1,52 +1,901 @@
-(function (exports) {
+/** @typedef {import('./base-x.types.js').BaseX} BaseX */
+/** @typedef {import('./base-x.types.js').Create} BaseXCreate */
+/** @typedef {import('./base-x.types.js').Decode} BaseXDecode */
+/** @typedef {import('./base-x.types.js').DecodeUnsafe} BaseXDecodeUnsafe */
+/** @typedef {import('./base-x.types.js').Encode} BaseXEncode */
+/** @typedef {import('./base58check.types.js').Base58Check} Base58Check */
+/** @typedef {import('./base58check.types.js').Checksum} Base58CheckChecksum */
+/** @typedef {import('./base58check.types.js').Create} Base58CheckCreate */
+/** @typedef {import('./base58check.types.js').Decode} Base58CheckDecode */
+/** @typedef {import('./base58check.types.js').DecodeHex} Base58CheckDecodeHex */
+/** @typedef {import('./base58check.types.js').Encode} Base58CheckEncode */
+/** @typedef {import('./base58check.types.js').EncodeHex} Base58CheckEncodeHex */
+/** @typedef {import('./base58check.types.js').EncodeParts} Base58CheckEncodeParts */
+/** @typedef {import('./base58check.types.js').Verify} Base58CheckVerify */
+/** @typedef {import('./base58check.types.js').VerifyHex} Base58CheckVerifyHex */
+/** @typedef {import('./ripemd160.types.js').RIPEMD160} RIPEMD160 */
+/** @typedef {import('./ripemd160.types.js').Create} RIPEMD160Create */
+/** @typedef {import('./ripemd160.types.js').Digest} RIPEMD160Digest */
+/** @typedef {import('./ripemd160.types.js').Hash} RIPEMD160Hash */
+/** @typedef {import('./ripemd160.types.js').Update} RIPEMD160Update */
+
+/**
+ * @typedef {DashKeys}
+ */
+
+/**
+ * @typedef DashKeysUtils
+ * @prop {GetPublicKey} toPublicKey
+ * @prop {HexToUint8Array} hexToUint8Array
+ * @prop {Sha256sum} sha256sum
+ * @prop {Uint8ArrayToHex} uint8ArrayToHex
+ */
+
+/** @type {BaseX} */
+//@ts-ignore
+var BaseX = {};
+
+/** @type {Base58Check} */
+//@ts-ignore
+var Base58Check = {};
+
+/** @type {RIPEMD160} */
+//@ts-ignore
+var RIPEMD160 = {};
+
+/** @type {DashKeys} */
+//@ts-ignore
+var DashKeys = ("object" === typeof module && exports) || {};
+(function (Window, DashKeys) {
   "use strict";
 
-  let DashKeys = {};
-  //@ts-ignore
-  exports.DashKeys = DashKeys;
-
-  /** @type {import('node:crypto')} */
-  //@ts-ignore
-  let Crypto = exports.crypto || require("node:crypto");
+  let BASE58 = `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz`;
+  /** @type {typeof window.crypto} */
+  let Crypto = Window.crypto || require("node:crypto");
+  let Utils = {};
 
   /**
-   * @callback Sha256Sum
-   * @param {Uint8Array|Buffer} u8
-   * @returns {Promise<Uint8Array|Buffer>}
-   */
+   * @param {Object} [opts]
+   * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
+   * @returns {Promise<String>}
+   */ /*
+  DashKeys.generate = async function (opts) {
+    /** @type {import('@dashincubator/secp256k1')} */ /*
+    let Secp256k1 =
+      //@ts-ignore
+      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
 
-  /** @type {Sha256Sum} */
-  let sha256sum = async function (u8) {
+    let privKey = Secp256k1.utils.randomPrivateKey();
+
+    let wif = await DashKeys.privateKeyToWif(privKey, opts);
+    return wif;
+  };
+  */
+
+  /** @type {HexToUint8Array} */
+  Utils.hexToUint8Array = function (hex) {
+    let len = hex.length / 2;
+    let buf = new Uint8Array(len);
+
+    let index = 0;
+    for (let i = 0; i < hex.length; i += 2) {
+      let c = hex.slice(i, i + 2);
+      let b = parseInt(c, 16);
+      buf[index] = b;
+      index += 1;
+    }
+
+    return buf;
+  };
+
+  /** @type {Sha256sum} */
+  Utils.sha256sum = async function (u8) {
     let arrayBuffer = await Crypto.subtle.digest("SHA-256", u8);
     let buf = new Uint8Array(arrayBuffer);
     return buf;
   };
 
-  /** @type {import('@dashincubator/base58check').Base58Check} */
-  let Base58Check =
-    //@ts-ignore
-    exports.Base58Check || require("@dashincubator/base58check").Base58Check;
+  /** @type {GetPublicKey} */
+  Utils.toPublicKey = function (privBuf) {
+    /** @type {import('@dashincubator/secp256k1')} */
+    let Secp256k1 =
+      //@ts-ignore
+      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
 
-  /** @type {import('@dashincubator/ripemd160')} */
-  //@ts-ignore
-  let RIPEMD160 = exports.RIPEMD160 || require("@dashincubator/ripemd160");
-
-  /** @type {import('@dashincubator/secp256k1')} */
-  //@ts-ignore
-  let Secp256k1 = exports.nobleSecp256k1 || require("@dashincubator/secp256k1");
-
-  /**
-   * Gets crypto-random bytes that may or may not be a valid private key
-   * (and that's okay - expected even)
-   * @param {Number} len
-   * @returns {Uint8Array}
-   */
-  //@ts-ignore
-  Secp256k1.utils.randomBytes = function (len) {
-    let buf = new Uint8Array(len);
-    Crypto.getRandomValues(buf);
-    return buf;
+    let isCompressed = true;
+    return Secp256k1.getPublicKey(privBuf, isCompressed);
   };
+
+  /** @type {Uint8ArrayToHex} */
+  Utils.uint8ArrayToHex = function (buf) {
+    /** @type {Array<String>} */
+    let hex = [];
+
+    buf.forEach(function (b) {
+      let h = b.toString(16);
+      h = h.padStart(2, "0");
+      hex.push(h);
+    });
+
+    return hex.join("");
+  };
+
+  (function () {
+    // BaseX
+
+    // base58 (base-x) encoding / decoding
+    // Copyright (c) 2022 Dash Incubator (base58)
+    // Copyright (c) 2021-2022 AJ ONeal (base62)
+    // Copyright (c) 2018 base-x contributors
+    // Copyright (c) 2014-2018 The Bitcoin Core developers (base58.cpp)
+    // Distributed under the MIT software license, see the accompanying
+    // file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+    //
+    // Taken from https://github.com/therootcompany/base62.js
+    // which is a fork of https://github.com/cryptocoinjs/base-x
+
+    /** @type {BaseXCreate} */
+    BaseX.create = function (ALPHABET) {
+      let baseX = {};
+
+      if (!ALPHABET) {
+        ALPHABET = BASE58;
+      }
+      if (ALPHABET.length >= 255) {
+        throw new TypeError("Alphabet too long");
+      }
+
+      var BASE_MAP = new Uint8Array(256);
+      for (var j = 0; j < BASE_MAP.length; j += 1) {
+        BASE_MAP[j] = 255;
+      }
+      for (var i = 0; i < ALPHABET.length; i += 1) {
+        var x = ALPHABET.charAt(i);
+        var xc = x.charCodeAt(0);
+        if (BASE_MAP[xc] !== 255) {
+          throw new TypeError(x + " is ambiguous");
+        }
+        BASE_MAP[xc] = i;
+      }
+
+      var BASE = ALPHABET.length;
+      var LEADER = ALPHABET.charAt(0);
+      var FACTOR = Math.log(BASE) / Math.log(256); // log(BASE) / log(256), rounded up
+      var iFACTOR = Math.log(256) / Math.log(BASE); // log(256) / log(BASE), rounded up
+      /** @type {BaseXDecode} */
+      baseX.decode = function (string) {
+        var buffer = decodeUnsafe(string);
+        if (buffer) {
+          return buffer;
+        }
+        throw new Error("Non-base" + BASE + " character");
+      };
+
+      /** @type {BaseXDecodeUnsafe} */
+      function decodeUnsafe(source) {
+        if (typeof source !== "string") {
+          throw new TypeError("Expected String");
+        }
+        if (source.length === 0) {
+          return new Uint8Array(0);
+        }
+        var psz = 0;
+        // Skip and count leading '1's.
+        var zeroes = 0;
+        var length = 0;
+        while (source[psz] === LEADER) {
+          zeroes += 1;
+          psz += 1;
+        }
+        // Allocate enough space in big-endian base256 representation.
+        var size = ((source.length - psz) * FACTOR + 1) >>> 0; // log(58) / log(256), rounded up.
+        var b256 = new Uint8Array(size);
+        // Process the characters.
+        while (source[psz]) {
+          // Decode character
+          var carry = BASE_MAP[source.charCodeAt(psz)];
+          // Invalid character
+          if (carry === 255) {
+            return null;
+          }
+          var i = 0;
+          for (
+            var it3 = size - 1;
+            (carry !== 0 || i < length) && it3 !== -1;
+            it3 -= 1, i += 1
+          ) {
+            carry += (BASE * b256[it3]) >>> 0;
+            b256[it3] = carry % 256 >>> 0;
+            carry = (carry / 256) >>> 0;
+          }
+          if (carry !== 0) {
+            throw new Error("Non-zero carry");
+          }
+          length = i;
+          psz += 1;
+        }
+        // Skip leading zeroes in b256.
+        var it4 = size - length;
+        while (it4 !== size && b256[it4] === 0) {
+          it4 += 1;
+        }
+        var vch = new Uint8Array(zeroes + (size - it4));
+        var j = zeroes;
+        while (it4 !== size) {
+          vch[j] = b256[it4];
+          j += 1;
+          it4 += 1;
+        }
+        return vch;
+      }
+
+      /** @type {BaseXEncode} */
+      baseX.encode = function (source) {
+        if (Array.isArray(source) || !(source instanceof Uint8Array)) {
+          source = Uint8Array.from(source);
+        }
+        if (!(source instanceof Uint8Array)) {
+          throw new TypeError("Expected Uint8Array");
+        }
+        if (source.length === 0) {
+          return "";
+        }
+        // Skip & count leading zeroes.
+        var zeroes = 0;
+        var length = 0;
+        var pbegin = 0;
+        var pend = source.length;
+        while (pbegin !== pend && source[pbegin] === 0) {
+          pbegin += 1;
+          zeroes += 1;
+        }
+        // Allocate enough space in big-endian base58 representation.
+        var size = ((pend - pbegin) * iFACTOR + 1) >>> 0;
+        var b58 = new Uint8Array(size);
+        // Process the bytes.
+        while (pbegin !== pend) {
+          var carry = source[pbegin];
+          // Apply "b58 = b58 * 256 + ch".
+          var i = 0;
+          for (
+            var it1 = size - 1;
+            (carry !== 0 || i < length) && it1 !== -1;
+            it1 -= 1, i += 1
+          ) {
+            carry += (256 * b58[it1]) >>> 0;
+            b58[it1] = carry % BASE >>> 0;
+            carry = (carry / BASE) >>> 0;
+          }
+          if (carry !== 0) {
+            throw new Error("Non-zero carry");
+          }
+          length = i;
+          pbegin += 1;
+        }
+        // Skip leading zeroes in base58 result.
+        var it2 = size - length;
+        while (it2 !== size && b58[it2] === 0) {
+          it2 += 1;
+        }
+        // Translate the result into a string.
+        var str = LEADER.repeat(zeroes);
+        for (; it2 < size; it2 += 1) {
+          str += ALPHABET.charAt(b58[it2]);
+        }
+        return str;
+      };
+
+      return baseX;
+    };
+  })();
+
+  (function () {
+    // Base58Check
+
+    // See also:
+    // - https://en.bitcoin.it/wiki/Base58Check_encoding
+    // - https://appdevtools.com/base58-encoder-decoder
+
+    /** @type {Base58CheckCreate} */
+    Base58Check.create = function (opts) {
+      let dictionary = opts?.dictionary || BASE58;
+      // See https://github.com/dashhive/dashkeys.js/blob/1f0f4e0d0aabf9e68d94925d660f00666f502391/dashkeys.js#L38
+      let pubKeyHashVersion = opts?.pubKeyHashVersion || "4c";
+      let privateKeyVersion = opts?.privateKeyVersion || "cc";
+      // From https://bitcoin.stackexchange.com/questions/38878/how-does-the-bip32-version-bytes-convert-to-base58
+      // 0x043587cf for testnet
+      let xpubVersion = opts?.xpubVersion || "0488b21e"; // base58-encoded "xpub..."
+      // 0x04358394 for testnet
+      let xprvVersion = opts?.xprvVersion || "0488ade4"; // base58-encoded "xprv..."
+
+      let bs58 = BaseX.create(dictionary);
+      let b58c = {};
+
+      /** @type {Base58CheckChecksum} */
+      b58c.checksum = async function (parts) {
+        b58c._setVersion(parts);
+        //@ts-ignore
+        parts.compressed = true; // parts.compressed ?? true;
+
+        //@ts-ignore
+        let key = parts.pubKeyHash || parts.privateKey;
+        let compression = "";
+        //@ts-ignore
+        if (parts.compressed && 64 === key.length) {
+          compression = "01";
+        }
+
+        let hex = `${parts.version}${key}${compression}`;
+        let check = await b58c._checksumHexRaw(hex);
+
+        return check;
+      };
+
+      /**
+       * @private
+       * @param {String} hex
+       */
+      b58c._checksumHexRaw = async function (hex) {
+        let buf = Utils.hexToUint8Array(hex);
+        let hash1 = await Utils.sha256sum(buf);
+        let hash2 = await Utils.sha256sum(hash1);
+
+        let last4 = hash2.slice(0, 4);
+        let check = Utils.uint8ArrayToHex(last4);
+        return check;
+      };
+
+      /**
+       * @private
+       * @param {Base58CheckEncodeParts} parts
+       */
+      b58c._setVersion = function (parts) {
+        //@ts-ignore
+        if (parts.pubKeyHash) {
+          //@ts-ignore
+          if (parts.privateKey) {
+            throw new Error(
+              `[@dashincubator/base58check] either 'privateKey' or 'pubKeyHash' must exist, but not both`,
+            );
+          }
+        }
+
+        if (!parts.version) {
+          //@ts-ignore
+          if (parts.privateKey) {
+            parts.version = privateKeyVersion;
+          }
+          //@ts-ignore
+          else if (parts.pubKeyHash) {
+            parts.version = pubKeyHashVersion;
+          }
+          return;
+        }
+
+        //@ts-ignore
+        if (parts.privateKey) {
+          if (parts.version === pubKeyHashVersion) {
+            throw new Error(
+              `[@dashincubator/base58check] '${parts.version}' is a public version, but the given key is private`,
+            );
+          }
+          return;
+        }
+
+        //@ts-ignore
+        if (parts.pubKeyHash) {
+          if (parts.version === privateKeyVersion) {
+            throw new Error(
+              `[@dashincubator/base58check] '${parts.version}' is a private version, but the given key is a pubKeyHash`,
+            );
+          }
+        }
+      };
+
+      /** @type {Base58CheckVerify} */
+      b58c.verify = async function (b58Addr, opts) {
+        let u8 = bs58.decode(b58Addr);
+        let hex = Utils.uint8ArrayToHex(u8);
+        return await b58c.verifyHex(hex, opts);
+      };
+
+      /** @type {Base58CheckVerifyHex} */
+      b58c.verifyHex = async function (base58check, opts) {
+        let parts = b58c.decodeHex(base58check);
+        let check = await b58c.checksum(parts);
+        let valid = parts.check === check;
+
+        if (!valid) {
+          if (false !== opts?.verify) {
+            throw new Error(`expected '${parts.check}', but got '${check}'`);
+          }
+          parts.valid = valid;
+        }
+
+        return parts;
+      };
+
+      /** @type {Base58CheckDecode} */
+      b58c.decode = function (b58Addr) {
+        let u8 = bs58.decode(b58Addr);
+        let hex = Utils.uint8ArrayToHex(u8);
+        return b58c.decodeHex(hex);
+      };
+
+      /** @type {Base58CheckDecodeHex} */
+      b58c.decodeHex = function (addr) {
+        let version = addr.slice(0, privateKeyVersion.length);
+        let versions = [pubKeyHashVersion, privateKeyVersion];
+        let xversions = [xpubVersion, xprvVersion];
+        let isXKey = false;
+
+        if (!versions.includes(version)) {
+          let xversion = addr.slice(0, xprvVersion.length);
+          isXKey = xversions.includes(xversion);
+          if (!isXKey) {
+            // TODO xkeys
+            throw new Error(
+              `[@dashincubator/base58check] expected pubKeyHash (or privateKey) to start with 0x${pubKeyHashVersion} (or 0x${privateKeyVersion}), not '0x${version}'`,
+            );
+          }
+          version = xversion;
+        }
+
+        // Public Key Hash: 1 + 20 + 4 // 50 hex
+        // Private Key: 1 + 32 + 1 + 4 // 74 or 76 hex
+        if (![50, 74, 76].includes(addr.length)) {
+          if (!isXKey) {
+            throw new Error(
+              `pubKeyHash (or privateKey) isn't as long as expected (should be 50, 74, or 76 hex chars, not ${addr.length})`,
+            );
+          }
+        }
+
+        let rawAddr = addr.slice(version.length, -8);
+        if (50 === addr.length) {
+          return {
+            version: version,
+            pubKeyHash: rawAddr,
+            check: addr.slice(-8),
+          };
+        }
+
+        if (isXKey) {
+          if (version === xprvVersion) {
+            return {
+              version: version,
+              xprv: rawAddr,
+              check: addr.slice(-8),
+            };
+          }
+          return {
+            version: version,
+            xpub: rawAddr,
+            check: addr.slice(-8),
+          };
+        }
+
+        return {
+          version: version,
+          privateKey: rawAddr.slice(0, 64),
+          compressed: true, // "01" === rawAddr.slice(64),
+          check: addr.slice(-8),
+        };
+      };
+
+      /** @type {Base58CheckEncode} */
+      b58c.encode = async function (parts) {
+        //@ts-ignore
+        if (parts.xprv) {
+          let version = parts.version || xprvVersion;
+          //@ts-ignore
+          return await b58c._encodeXKey(`${version}${parts.xprv}`);
+        }
+        //@ts-ignore
+        if (parts.xpub) {
+          let version = parts.version || xpubVersion;
+          //@ts-ignore
+          return await b58c._encodeXKey(`${version}${parts.xpub}`);
+        }
+
+        let hex = await b58c.encodeHex(parts);
+        let u8 = Utils.hexToUint8Array(hex);
+        return bs58.encode(u8);
+      };
+
+      /** @type {Base58CheckEncodeHex} */
+      b58c.encodeHex = async function (parts) {
+        //@ts-ignore
+        if (parts.pubKeyHash) {
+          return await b58c._encodePubKeyHashHex(parts);
+        }
+
+        //@ts-ignore
+        if (parts.privateKey) {
+          return await b58c._encodePrivateKeyHex(parts);
+        }
+
+        throw new Error(
+          `[@dashincubator/base58check] either 'privateKey' or 'pubKeyHash' must exist to encode`,
+        );
+      };
+
+      /**
+       * @private
+       * @param {String} versionAndKeyHex
+       */
+      b58c._encodeXKey = async function (versionAndKeyHex) {
+        let checkHex = await b58c._checksumHexRaw(versionAndKeyHex);
+        let u8 = Utils.hexToUint8Array(`${versionAndKeyHex}${checkHex}`);
+        return bs58.encode(u8);
+      };
+
+      /**
+       * @private
+       * @param {Base58CheckEncodeParts} parts
+       */
+      b58c._encodePrivateKeyHex = async function (parts) {
+        parts.compressed = true; // parts.compressed ?? true;
+
+        //@ts-ignore
+        let key = parts.privateKey;
+        if (66 === key.length && "01" === key.slice(-2)) {
+          //key.slice(0, 64);
+          parts.compressed = true;
+        } else if (64 === key.length && parts.compressed) {
+          key += "01";
+        } else {
+          throw new Error(
+            `[@dashincubator/dashkeys/base58check] ${key.length} is not a valid length for a private key - it should be 32 bytes (64 hex chars), or 33 bytes with compressed marker byte`,
+          );
+        }
+
+        b58c._setVersion(parts);
+
+        // after version and compression are set
+        let check = await b58c.checksum(parts);
+
+        return `${parts.version}${key}${check}`;
+      };
+
+      /**
+       * @private
+       * @param {Base58CheckEncodeParts} parts
+       */
+      b58c._encodePubKeyHashHex = async function (parts) {
+        //@ts-ignore
+        let key = parts.pubKeyHash;
+
+        if (40 !== key.length) {
+          throw new Error(
+            `[@dashincubator/base58check] ${key.length} is not a valid pub key hash length, should be 20 bytes (40 hex chars)`,
+          );
+        }
+
+        b58c._setVersion(parts);
+
+        // after version is set
+        let check = await b58c.checksum(parts);
+
+        return `${parts.version}${key}${check}`;
+      };
+
+      return b58c;
+    };
+  })();
+
+  (function () {
+    // RIPEMD160
+    const ARRAY16 = new Array(16);
+
+    const zl = [
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 7, 4, 13, 1, 10, 6,
+      15, 3, 12, 0, 9, 5, 2, 14, 11, 8, 3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6,
+      13, 11, 5, 12, 1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2, 4, 0,
+      5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13,
+    ];
+
+    const zr = [
+      5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12, 6, 11, 3, 7, 0, 13,
+      5, 10, 14, 15, 8, 12, 4, 9, 1, 2, 15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2,
+      10, 0, 4, 13, 8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14, 12,
+      15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11,
+    ];
+
+    const sl = [
+      11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8, 7, 6, 8, 13, 11,
+      9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12, 11, 13, 6, 7, 14, 9, 13, 15, 14, 8,
+      13, 6, 5, 12, 7, 5, 11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5,
+      12, 9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6,
+    ];
+
+    const sr = [
+      8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6, 9, 13, 15, 7, 12,
+      8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11, 9, 7, 15, 11, 8, 6, 6, 14, 12, 13,
+      5, 14, 13, 13, 7, 5, 15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15,
+      8, 8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11,
+    ];
+
+    const hl = [0x00000000, 0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xa953fd4e];
+    const hr = [0x50a28be6, 0x5c4dd124, 0x6d703ef3, 0x7a6d76e9, 0x00000000];
+
+    const blockSize = 64;
+
+    class _RIPEMD160 {
+      constructor() {
+        // state
+        /** @private */
+        this._a = 0x67452301;
+        /** @private */
+        this._b = 0xefcdab89;
+        /** @private */
+        this._c = 0x98badcfe;
+        /** @private */
+        this._d = 0x10325476;
+        /** @private */
+        this._e = 0xc3d2e1f0;
+
+        /** @private */
+        this._block = new Uint8Array(blockSize);
+        /** @private */
+        this._blockSize = blockSize;
+        /** @private */
+        this._blockOffset = 0;
+        /** @private */
+        this._length = [0, 0, 0, 0];
+
+        /** @private */
+        this._finalized = false;
+      }
+
+      /** @type {RIPEMD160Update} */
+      update(data) {
+        if (this._finalized) {
+          throw new Error("Digest already called");
+        }
+        if (!(data instanceof Uint8Array)) {
+          throw new Error("update() requires a Uint8Array");
+        }
+
+        // consume data
+        const block = this._block;
+        let offset = 0;
+        while (this._blockOffset + data.length - offset >= this._blockSize) {
+          for (let i = this._blockOffset; i < this._blockSize; ) {
+            block[i++] = data[offset++];
+          }
+          this._update();
+          this._blockOffset = 0;
+        }
+        while (offset < data.length) {
+          block[this._blockOffset++] = data[offset++];
+        }
+
+        // update length
+        for (let j = 0, carry = data.length * 8; carry > 0; ++j) {
+          this._length[j] += carry;
+          carry = (this._length[j] / 0x0100000000) | 0;
+          if (carry > 0) {
+            this._length[j] -= 0x0100000000 * carry;
+          }
+        }
+
+        return this;
+      }
+
+      /** @private */
+      _update() {
+        const words = ARRAY16;
+        const dv = new DataView(
+          this._block.buffer,
+          this._block.byteOffset,
+          blockSize,
+        );
+        for (let j = 0; j < 16; ++j) {
+          words[j] = dv.getInt32(j * 4, true);
+        }
+
+        let al = this._a | 0;
+        let bl = this._b | 0;
+        let cl = this._c | 0;
+        let dl = this._d | 0;
+        let el = this._e | 0;
+
+        let ar = this._a | 0;
+        let br = this._b | 0;
+        let cr = this._c | 0;
+        let dr = this._d | 0;
+        let er = this._e | 0;
+
+        // computation
+        for (let i = 0; i < 80; i += 1) {
+          let tl;
+          let tr;
+          if (i < 16) {
+            tl = fn1(al, bl, cl, dl, el, words[zl[i]], hl[0], sl[i]);
+            tr = fn5(ar, br, cr, dr, er, words[zr[i]], hr[0], sr[i]);
+          } else if (i < 32) {
+            tl = fn2(al, bl, cl, dl, el, words[zl[i]], hl[1], sl[i]);
+            tr = fn4(ar, br, cr, dr, er, words[zr[i]], hr[1], sr[i]);
+          } else if (i < 48) {
+            tl = fn3(al, bl, cl, dl, el, words[zl[i]], hl[2], sl[i]);
+            tr = fn3(ar, br, cr, dr, er, words[zr[i]], hr[2], sr[i]);
+          } else if (i < 64) {
+            tl = fn4(al, bl, cl, dl, el, words[zl[i]], hl[3], sl[i]);
+            tr = fn2(ar, br, cr, dr, er, words[zr[i]], hr[3], sr[i]);
+          } else {
+            // if (i<80) {
+            tl = fn5(al, bl, cl, dl, el, words[zl[i]], hl[4], sl[i]);
+            tr = fn1(ar, br, cr, dr, er, words[zr[i]], hr[4], sr[i]);
+          }
+
+          al = el;
+          el = dl;
+          dl = rotl(cl, 10);
+          cl = bl;
+          bl = tl;
+
+          ar = er;
+          er = dr;
+          dr = rotl(cr, 10);
+          cr = br;
+          br = tr;
+        }
+
+        // update state
+        const t = (this._b + cl + dr) | 0;
+        this._b = (this._c + dl + er) | 0;
+        this._c = (this._d + el + ar) | 0;
+        this._d = (this._e + al + br) | 0;
+        this._e = (this._a + bl + cr) | 0;
+        this._a = t;
+      }
+
+      /** @type {RIPEMD160Digest} */
+      digest() {
+        if (this._finalized) {
+          throw new Error("Digest already called");
+        }
+        this._finalized = true;
+
+        const dig = this._digest();
+        return dig;
+      }
+
+      /**
+       * @returns {Uint8Array}
+       */
+      _digest() {
+        // create padding and handle blocks
+        this._block[this._blockOffset++] = 0x80;
+        if (this._blockOffset > 56) {
+          for (let i = this._blockOffset; i < 64; i++) {
+            this._block[i] = 0;
+          }
+          this._update();
+          this._blockOffset = 0;
+        }
+
+        for (let i = this._blockOffset; i < 56; i++) {
+          this._block[i] = 0;
+        }
+        let dv = new DataView(
+          this._block.buffer,
+          this._block.byteOffset,
+          blockSize,
+        );
+        dv.setUint32(56, this._length[0], true);
+        dv.setUint32(60, this._length[1], true);
+        this._update();
+
+        // produce result
+        const buffer = new Uint8Array(20);
+        dv = new DataView(buffer.buffer, buffer.byteOffset, 20);
+        dv.setInt32(0, this._a, true);
+        dv.setInt32(4, this._b, true);
+        dv.setInt32(8, this._c, true);
+        dv.setInt32(12, this._d, true);
+        dv.setInt32(16, this._e, true);
+        return buffer;
+      }
+    }
+
+    /** @type {RIPEMD160Create} */
+    RIPEMD160.create = function () {
+      return new _RIPEMD160();
+    };
+
+    /** @type {RIPEMD160Hash} */
+    RIPEMD160.hash = function (bytes) {
+      let hasher = new _RIPEMD160();
+      hasher.update(bytes);
+      return hasher.digest();
+    };
+
+    /**
+     * @param {number} x
+     * @param {number} n
+     * @returns {number}
+     */
+    function rotl(x, n) {
+      return (x << n) | (x >>> (32 - n));
+    }
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     * @param {number} e
+     * @param {number} m
+     * @param {number} k
+     * @param {number} s
+     * @returns {number}
+     */
+    function fn1(a, b, c, d, e, m, k, s) {
+      return (rotl((a + (b ^ c ^ d) + m + k) | 0, s) + e) | 0;
+    }
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     * @param {number} e
+     * @param {number} m
+     * @param {number} k
+     * @param {number} s
+     * @returns {number}
+     */
+    function fn2(a, b, c, d, e, m, k, s) {
+      return (rotl((a + ((b & c) | (~b & d)) + m + k) | 0, s) + e) | 0;
+    }
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     * @param {number} e
+     * @param {number} m
+     * @param {number} k
+     * @param {number} s
+     * @returns
+     */
+    function fn3(a, b, c, d, e, m, k, s) {
+      return (rotl((a + ((b | ~c) ^ d) + m + k) | 0, s) + e) | 0;
+    }
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     * @param {number} e
+     * @param {number} m
+     * @param {number} k
+     * @param {number} s
+     * @returns {number}
+     */
+    function fn4(a, b, c, d, e, m, k, s) {
+      return (rotl((a + ((b & d) | (c & ~d)) + m + k) | 0, s) + e) | 0;
+    }
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {number} c
+     * @param {number} d
+     * @param {number} e
+     * @param {number} m
+     * @param {number} k
+     * @param {number} s
+     * @returns {number}
+     */
+    function fn5(a, b, c, d, e, m, k, s) {
+      return (rotl((a + (b ^ (c | ~d)) + m + k) | 0, s) + e) | 0;
+    }
+  })();
 
   // https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
   // https://docs.dash.org/en/stable/developers/testnet.html
@@ -61,25 +910,13 @@
   let b58c = Base58Check.create();
 
   /**
-   * @param {Object} [opts]
-   * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
-   * @returns {Promise<String>}
-   */
-  DashKeys.generate = async function (opts) {
-    let privKey = Secp256k1.utils.randomPrivateKey();
-
-    let wif = await DashKeys.privateKeyToWif(privKey, opts);
-    return wif;
-  };
-
-  /**
    * @param {Uint8Array} privKey
    * @param {Object} [opts]
    * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
    * @returns {Promise<String>}
    */
   DashKeys.privateKeyToWif = async function (privKey, opts) {
-    let privKeyHex = DashKeys._uint8ArrayToHex(privKey);
+    let privKeyHex = Utils.uint8ArrayToHex(privKey);
     let decoded = {
       version: opts?.version,
       privateKey: privKeyHex,
@@ -102,10 +939,9 @@
   DashKeys.wifToAddr = async function (wif, opts) {
     let privBuf = await DashKeys._wifToPrivateKey(wif);
 
-    let isCompressed = true;
-    let pubBuf = Secp256k1.getPublicKey(privBuf, isCompressed);
+    let pubBuf = Utils.toPublicKey(privBuf);
     let pubKeyHash = await DashKeys.publicKeyToPubKeyHash(pubBuf);
-    let pubKeyHashHex = DashKeys._uint8ArrayToHex(pubKeyHash);
+    let pubKeyHashHex = Utils.uint8ArrayToHex(pubKeyHash);
 
     let addr = await b58c.encode({
       version: opts?.version,
@@ -121,16 +957,13 @@
    */
   DashKeys._wifToPrivateKey = async function (wif) {
     let b58cWif = b58c.decode(wif);
-    let privateKey = DashKeys._hexToUint8Array(b58cWif.privateKey);
+    let privateKey = Utils.hexToUint8Array(b58cWif.privateKey);
     return privateKey;
   };
 
-  /**
-   * @param {Uint8Array|Buffer} buf
-   * @returns {Promise<Uint8Array>} - pubKeyHash buffer (no magic byte or checksum)
-   */
+  /** @type {PublicKeyToPubKeyHash} */
   DashKeys.publicKeyToPubKeyHash = async function (buf) {
-    let shaBuf = await sha256sum(buf);
+    let shaBuf = await Utils.sha256sum(buf);
 
     let ripemd = RIPEMD160.create();
     ripemd.update(shaBuf);
@@ -139,46 +972,49 @@
     return hash;
   };
 
-  /**
-   * JS Buffer to Hex that works for Little-Endian CPUs (ARM, x64, x86, WASM)
-   * @param {Buffer|Uint8Array} buf
-   * @returns {String} - hex
-   */
-  DashKeys._uint8ArrayToHex = function (buf) {
-    /** @type {Array<String>} */
-    let hex = [];
+  DashKeys.utils = Utils;
 
-    buf.forEach(function (b) {
-      let h = b.toString(16);
-      h = h.padStart(2, "0");
-      hex.push(h);
-    });
+  //@ts-ignore
+  Window.BaseX = DashKeys.BaseX = BaseX;
+  //@ts-ignore
+  Window.Base58 = DashKeys.Base58 = BaseX;
+  //@ts-ignore
+  Window.Base58Check = DashKeys.Base58Check = Base58Check;
+  //@ts-ignore
+  Window.RIPEMD160 = DashKeys.RIPEMD160 = RIPEMD160;
+})(globalThis.window || /** @type {window} */ {}, DashKeys);
+if ("object" === typeof module) {
+  module.exports = DashKeys;
+}
 
-    return hex.join("");
-  };
+/**
+ * @callback GetPublicKey
+ * @param {Uint8Array} privBuf
+ * @returns {Uint8Array} - the public key u8 buffer
+ */
 
-  /**
-   * Hex to JS Buffer that works in browsers and Little-Endian CPUs
-   * (which is most of the - ARM, x64, x86, WASM, etc)
-   * @param {String} hex
-   * @returns {Uint8Array} - JS Buffer (Node and Browsers)
-   */
-  DashKeys._hexToUint8Array = function (hex) {
-    let len = hex.length / 2;
-    let buf = new Uint8Array(len);
+/**
+ * Hex to JS Buffer that works for Little-Endian CPUs (ARM, x64, x86, WASM)
+ * @callback HexToUint8Array
+ * @param {String} hex - hex
+ * @returns {Uint8Array} - JS Uint8Array (Buffer for Node and Browsers)
+ */
 
-    let index = 0;
-    for (let i = 0; i < hex.length; i += 2) {
-      let c = hex.slice(i, i + 2);
-      let b = parseInt(c, 16);
-      buf[index] = b;
-      index += 1;
-    }
+/**
+ * @callback PublicKeyToPubKeyHash
+ * @param {Uint8Array|Buffer} buf
+ * @returns {Promise<Uint8Array>} - pubKeyHash buffer (no magic byte or checksum)
+ */
 
-    return buf;
-  };
+/**
+ * @callback Sha256sum
+ * @param {Uint8Array|Buffer} u8
+ * @returns {Promise<Uint8Array>}
+ */
 
-  if ("undefined" !== typeof module) {
-    module.exports = DashKeys;
-  }
-})(("undefined" !== typeof module && module.exports) || window);
+/**
+ * JS Buffer to Hex
+ * @callback Uint8ArrayToHex
+ * @param {Uint8Array} buf
+ * @returns {String} - hex
+ */
