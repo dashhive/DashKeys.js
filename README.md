@@ -10,28 +10,12 @@ Generate, validate, create, and convert WIFs and PayAddress.
 
 ## CLI
 
-Saves a private key to a file with the name of the public key hash (pay addr)
-
-**Install**
-
 ```sh
-npm install --location=global dashkeys
+npm install --location=global dashkeys-cli
+dashkeys help
 ```
 
-**Usage**
-
-```sh
-dashkeys generate
-```
-
-```txt
-Saved new private key to './XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9.wif'
-```
-
-The name of the file is the Pay Addr (public key hash) and the contents are the
-WIF (private key).
-
-The leading `X` for each is because they are base58check-encoded.
+See DashKey's CLI README at <https://github.com/dashhive/dashkeys-cli.js>.
 
 ## Node
 
