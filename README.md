@@ -322,3 +322,30 @@ Pay Addr:        Xf8E3eA1Sh8vC29fxQVbET8cqfCRcmiQeA (WRONG)
           Hash:  30ad71f52c005b5444f94032dda84466ddaf87a0 (WRONG)
       Checksum:  dae0ce2f (WRONG)
 ```
+
+# LICENSE
+
+To keep the dependency tree slim, this includes `BaseX` and `Base58Check`, which
+are derivatives of `base58.cpp`, as well as RIPEMD160.
+
+These have all been _complete_ for several years. They do not need updates.
+
+## DashKeys.js
+
+Copyright (c) 2022-2023 Dash Incubator \
+Copyright (c) 2021-2023 AJ ONeal
+
+MIT License
+
+## BaseX, Base58, Base58Check
+
+Copyright (c) 2018 base-x contributors \
+Copyright (c) 2014-2018 The Bitcoin Core developers
+
+MIT License
+
+## RIPEMD160
+
+Copyright (c) 2016 crypto-browserify
+
+MIT License
