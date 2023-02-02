@@ -2,7 +2,7 @@
   "name": "dashkeys",
   "version": "0.3.1",
   "description": "Generate, validate, create, and convert WIFs and PayAddress.",
-  "main": "index.js",
+  "main": "dashkeys.js",
   "bin": {
     "dashkeys": "bin/dashkeys.js"
   },
@@ -12,10 +12,8 @@
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "doc": "npx jsdoc@3.x --configure ./jsdoc.conf.json --destination ./docs --package ./package.json --readme ./README.md --access all --private --recurse ./lib/",
     "fmt": "npx -p prettier@2.x -- prettier -w '**/*.{html,js,md}'",
     "lint": "npx -p typescript@4.x -- tsc -p ./jsconfig.json",
-    "prepublish": "npx -p jswt@1.x -- reexport",
     "version": "npm version -m \"chore(release): bump to v%s\""
   },
   "repository": {
@@ -42,8 +40,6 @@
   },
   "homepage": "https://github.com/dashhive/dashkeys.js#readme",
   "dependencies": {
-    "@dashincubator/base58check": "^1.2.0",
-    "@dashincubator/ripemd160": "^2.3.0",
-    "@dashincubator/secp256k1": "^1.7.1-0"
+    "@dashincubator/secp256k1": "^1.7.1-1"
   }
 }
