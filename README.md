@@ -1,52 +1,71 @@
-# dashkeys.js
+# [DashKeys.js][dashkeys-js]
 
-Generate, validate, create, and convert WIFs and PayAddress.
+Generate, validate, and convert DASH WIFs and Pay Addresses. \
+(Base58Check encoding/decoding for Private Keys and Public Key Hashes)
 
-- CLI
-- Node & Bundlers
-- Browser
-- API
-- Fixtures (for developing and testing)
+```text
+WIF:     XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
+Address: XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
+```
 
-## CLI
+> A fully-functional, production-ready **reference implementation** of Dash
+> Keys - suitable for learning DASH specs and protocols, and porting to other
+> languages.
+
+## Table of Contents
+
+- 🚀 [Install](#install)
+  - Terminal (CLI)
+  - Node & Bundlers
+  - Browser
+- 💪 [Usage](#usage)
+- ⚙️ [API](#api)
+- 🧰 Developer Resources
+  - 👩‍🏫 [Glossary of Terms](#glossary)
+    - Address, Check, Compressed, Private Key,
+    - PubKey Hash, Public Key, Version, WIF, etc ...
+  - 🦓 [Fixtures](#fixtures) (for testing)
+    - The Canonical Dash "Zoomonic"
+    - Anatomy of Addrs & WIFs
+    - Troubleshooting Uncompressed Keys
+    - Implementation Details
+- 📄 [License](#license)
+
+[base58check-js]: https://github.com/dashhive/base58check.js
+[dashkeys-js]: https://github.com/dashhive/dashkeys.js
+[dashhd-js]: https://github.com/dashhive/dashhd.js
+[dashwallet-js]: https://github.com/dashhive/dashwallet.js
+[dash-hd-cli]: https://github.com/dashhive/dashhd-cli.js
+[dash-keys-cli]: https://github.com/dashhive/dashkeys-cli.js
+[dash-wallet-cli]: https://github.com/dashhive/dashwallet-cli.js
+
+## Install
+
+Works in Command Line, Node, Bun, Bundlers, and Browsers
+
+### Terminal
 
 ```sh
 npm install --location=global dashkeys-cli
 dashkeys help
 ```
 
-See DashKey's CLI README at <https://github.com/dashhive/dashkeys-cli.js>.
+See DashKey's CLI README at
+[github.com/dashhive/dashkeys-cli.js][dash-keys-cli].
 
-## Node
+## Node & Bundlers
 
 **Install**
 
 ```sh
 npm install --save dashkeys
+npm install --save @dashincubator/secp256k1@1
 ```
-
-**Usage**
 
 ```js
 let DashKeys = require("dashkeys");
-
-let wif = await DashKeys.generate();
-// ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
-
-let addr = await DashKeys.wifToAddr(wif);
-// ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
-```
-
-You can use `DashKeys.privateKeyToWif(privateKey)` to generate non-random WIFs:
-
-```js
-// TODO
-let privateKey = Buffer.from(
-  "1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950",
-  "hex",
-);
-let wif = await DashKeys.privateKeyToWif(privateKey);
-let addr = await DashKeys.wifToAddr(wif);
+let toHex = DashKeys.utils.bytesToHex;
+let toBytes = DashKeys.utils.hexToBytes;
 ```
 
 ## Browser
@@ -54,25 +73,19 @@ let addr = await DashKeys.wifToAddr(wif);
 **Install**
 
 ```html
-<script src="https://unpkg.com/@dashincubator/base58check/base58check.js"></script>
 <script src="https://unpkg.com/@dashincubator/secp256k1/secp256k1.js"></script>
-<script src="https://unpkg.com/@dashincubator/ripemd160/ripemd160.js"></script>
 <script src="https://unpkg.com/dashkeys/dashkeys.js"></script>
 ```
-
-**Usage**
 
 ```js
 async function main() {
   "use strict";
 
   let DashKeys = window.DashKeys;
+  let toHex = DashKeys.utils.bytesToHex;
+  let toBytes = DashKeys.utils.hexToBytes;
 
-  let wif = await DashKeys.generate();
-  // ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
-
-  let addr = await DashKeys.wifToAddr(wif);
-  // ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
+  // ...
 }
 
 main().catch(function (err) {
@@ -81,181 +94,427 @@ main().catch(function (err) {
 });
 ```
 
+## Usage
+
+```js
+let wif = await DashKeys.generateWifNonHd();
+// ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
+
+let addr = await DashKeys.wifToAddr(wif);
+// ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
+```
+
+You can use `DashKeys.privateKeyToWif(privateKey)` to encode Private Keys to
+WIFs:
+
+```js
+let privBuf = toBytes(
+  "1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950",
+);
+let wif = await DashKeys.privateKeyToWif(privateKey);
+let addr = await DashKeys.wifToAddr(wif);
+```
+
 ## API
 
-DashKeys has a small API wrapping Secp256k1 and Base58Check.
+Dash Keys doesn't do anything that other Base58Check libraries don't do.
 
-Most of what you need to do can be done with those directly.
+The purpose of this rewrite has been to provide, a simpler, **lightweight**,
+more streamlined production-ready **reference implementation** that takes
+advantage of modern, cross-platform _JS-native APIs_, such as WebCrypto.
+
+**However**, it does (we think) do a better job at exposing a functions for how
+the Base58Check codec is **used in practice** (rather than _everything_ it can
+theoretically be used for).
+
+### Common Conversions
 
 ```js
-let wif = await DashKeys.generate();
-let addr = await DashKeys.wifToAddr(wif);
+// Bi-Directional Conversions
+await DashKeys.addrToPkh(address); // PubKey Hash Uint8Array (ShaRipeBytes)
+await DashKeys.pkhToAddr(hashBytes, { version }); // Address (Base58Check-encoded)
+await DashKeys.pubKeyToAddr(pubBytes); // Address (Base58Check-encoded)
+await DashKeys.privKeyToWif(privBytes, { version }); // WIF (Base58Check-encoded)
+await DashKeys.wifToPrivKey(wif); // Private Key Uint8Array
 
-let pkh = await DashKeys.publicKeyToPubKeyHash(publicKey);
-let wif = await DashKeys.privateKeyToWif(privateKey);
+// One-Way Conversions
+await DashKeys.wifToAddr(wif); // Address (Base58Check-encoded)
+await DashKeys.pubKeyToPkh(pubBytes); // shaRipeBytes Uint8Array
 ```
 
-## Helpful Helper Functions
+**Note**: these all output either Base58Check Strings, or Byte Arrays
+(Uint8Array).
 
-These aren't included as part of the DashKeys API because they're things that
-[@dashincubator/base58check](https://github.com/dashhive/base58check.js) already
-does, 95% or so.
+### Common Encode / Decode Options
 
 ```js
-await addrToPubKeyHash(addr); // buffer
-await pubKeyHashToAddr(pubKeyHash); // Pay Addr
+{
+  // (default) throw if check(sum) fails
+  validate: true,
 
-await wifToPrivateKey(wif); // buffer
-await privateKeyToWif(privKey); // WIF
-
-await decode(addrOrWif); // { version, pubKeyHash, privateKey, check, valid }
-await encode(pkhOrPkBuf); // Pay Addr or WIF
-
-uint8ArrayToHex(buf); // hex
-hexToUint8Array(hex); // buffer
+  // which encoding to use
+  // (not all are valid all the time - it depends on the use)
+  version: "mainnet|testnet|private|pkh|xprv|xpub|cc|4c|ef|8c",
+}
 ```
 
-However, you are welcome, of course, to copy and paste these to your heart's
-content. 😉
+### Debugging Encoder / Decoder
 
 ```js
-let Base58Check = require("@dashincubator/base58check").Base58Check;
-let dash58check = Base58Check.create({
-  pubKeyHashVersion: "4c", // "8c" for dash testnet, "00" for bitcoin main
-  privateKeyVersion: "cc", // "ef" for dash testnet, "80" for bitcoin main
-});
+// Base58Check Codec for all of Private Key and PubKey Hash (and X Keys)
+await DashKeys.decode(b58cString, { validate }); // { version, type, check, etc }
+await DashKeys.encodeKey(keyBytes, { version }); // Base58Check-encoded key
+```
 
-/**
- * @param {String} addr
- * @returns {Promise<Uint8Array>} - p2pkh (no magic byte or checksum)
- */
-async function addrToPubKeyHash(addr) {
-  let b58cAddr = dash58check.decode(addr);
-  let pubKeyHash = hexToUint8Array(b58cAddr.pubKeyHash);
-  return pubKeyHash;
+**Decode Output**:
+
+```json5
+{
+  check: "<hex>",
+  compressed: true,
+  type: "private|pkh|xprv|xpub",
+  version: "cc|4c|ef|8c",
+  valid: true, // check matches
+
+  // possible key types
+  privateKey: "<hex>",
+  pubKeyHash: "<hex>",
+  xprv: "<hex>",
+  xpub: "<hex>",
 }
+```
 
-/**
- * @param {Uint8Array} pubKeyHash - no magic byte or checksum
- * @returns {Promise<String>} - Pay Addr
- */
-async function pubKeyHashToAddr(pubKeyHash) {
-  let hex = uint8ArrayToHex(pubKeyHash);
-  let addr = await dash58check.encode({ pubkeyHash: hex });
-  return addr;
-}
+**note**: `compressed` only applies to Private Keys and is _always_ `true`. \
+Remains in for compatibility, but not used.
 
-/**
- * @param {String} wif
- * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
- */
-async function wifToPrivateKey(wif) {
-  let b58cWif = dash58check.decode(wif);
-  let privateKey = hexToUint8Array(b58cWif.privateKey);
-  return privateKey;
-}
+### Helpful Helper Utils
 
-/**
- * @param {Uint8Array} privKey
- * @returns {Promise<String>} - wif
- */
-async function privateKeyToWif(privKey) {
-  let privateKey = uint8ArrayToHex(privKey);
+```js
+// Byte Utils (NOT async)
+let toHex = DashKeys.utils.bytesToHex;
+toHex(uint8Array); // hex String
 
-  let wif = await dash58check.encode({ privateKey: privateKey });
+let toBytes = DashKeys.utils.hexToBytes;
+toBytes(hexString); // bytes Uint8Array
+
+// Hash Utils
+await DashKeys.utils.ripemd160sum(bytes); // hash bytes Uint8Array
+await DashKeys.utils.sha256sum(bytes); // hash bytes Uint8Array
+```
+
+### Swappable Secp256k1 Utils
+
+We felt it was important to **not strictly depend** on _our_ chosen
+**secp256k1** implementation. \
+(that's why you have to manually install it as a dependency yourself)
+
+Use these functions **as-is**, or overwrite them with your own implementation.
+
+```js
+// Key Utils (over
+await DashKeys.utils.generateWifNonHd({ version }); // WIF string (non-hd, dev tool)
+await DashKeys.utils.toPublicKey(privBytes); // Public Key Bytes
+```
+
+**Example Overwrite**
+
+You **DO NOT** need to do this, but you _may_ if you wish:
+
+```js
+let Secp256k1 = require("@noble/secp256k1");
+
+DashKeys.utils.generateWifNonHd = async function (opts) {
+  let privBytes = Secp256k1.utils.randomPrivateKey();
+  let privateKey = toHex(privBytes);
+  let version = opts.version ?? "cc";
+
+  let wif = await DashKeys.encode(privBytes, { version });
   return wif;
-}
+};
 
-/**
- * @param {String} addrOrWif
- */
-async function decode(addrOrWif) {
-  let parts = await dash58check.decode(addrOrWif);
-  let check = await dash58check.checksum(parts);
-  let valid = parts.check === check;
+DashKeys.utils.toPublicKey = async function (privBytes) {
+  let isCompressed = true;
+  let pubBytes = Secp256k1.getPublicKey(privBytes, isCompressed);
 
-  parts.valid = valid;
-  //parts.privateKeyBuffer = hexToUint8Array(parts.privateKey);
-  //parts.pubKeyHashBuffer = hexToUint8Array(parts.pubKeyHash);
-
-  return parts;
-}
-
-/**
- * @param {Uint8Array} buf
- * @returns {String} - Pay Addr or WIF
- * @throws {Error}
- */
-async function encode(buf) {
-  let hex = uint8ArrayToHex(buf);
-
-  if (32 === buf.length) {
-    return await dash58check.encode({
-      privateKey: hex,
-    });
-  }
-
-  if (20 === buf.length) {
-    return await dash58check.encode({
-      pubKeyHash: hex,
-    });
-  }
-
-  throw new Error("buffer length must be (PubKeyHash) or 32 (PrivateKey)");
-}
-
-/**
- * JS Buffer to Hex that works in browsers and Little-Endian
- * (which is most of the - ARM, x64, x86, WASM, etc)
- * @param {Uint8Array} buf
- * @returns {String} - hex
- */
-function uint8ArrayToHex(buf) {
-  /** @type {Array<String>} */
-  let hex = [];
-
-  buf.forEach(function (b) {
-    let c = b.toString(16).padStart(2, "0");
-    hex.push(c);
-  });
-
-  return hex.join("");
-}
-
-/**
- * Hex to JS Buffer that works in browsers and Little-Endian CPUs
- * (which is most of the - ARM, x64, x86, WASM, etc)
- * @param {String} hex
- * @returns {Uint8Array} - JS Buffer (Node and Browsers)
- */
-function hexToUint8Array(hex) {
-  let buf = new Uint8Array(hex.length / 2);
-
-  for (let i = 0; i < hex.length; i += 2) {
-    let c = hex.slice(i, i + 2);
-    let b = parseInt(c, 16);
-    let index = i / 2;
-    buf[index] = b;
-  }
-
-  return buf;
-}
+  return pubBytes;
+};
 ```
+
+## Glossary
+
+Here are bunches of terms by their canonical name, as well as a terse
+description.
+
+- [Address](#address)
+- [Check](#check)
+- [Base X](#base-x)
+- [Base58](#base58)
+- [Base58Check](#base58check)
+- [Compressed Byte](#compressed-byte)
+- [HD Key](#hd-key)
+- [Private Key](#private-key)
+- [PubKey Hash](#pubkey-hash)
+- [Public Key](#public-key)
+- [RIPEMD160](#ripemd160)
+- [Version](#version)
+- [WIF](#wif)
+- [Zoomonic](#zoomonic)
+
+### Address
+
+Also: Payment Address, Pay Addr, Addr
+
+A Base58Check-encoded PubKey Hash. \
+(can **NOT** be reversed into the Public Key) \
+The encoding is like this:
+
+- Coin Version Public byte(s), which is 4c for DASH
+- Public Key Hash (20 bytes)
+- Check(sum) is 4 bytes of SHA-256(concat(coin, comp, pkh))
+- Base58Check is Base85(concat(coin, comp, pkh, check))
+
+```text
+Version:     cc
+PubKey Hash: ae14c8728915b492d9d77813bd8fddd91ce70948
+Check:       ce08541e
+
+Decoded:     ccae14c8728915b492d9d77813bd8fddd91ce70948ce08541e
+
+Encoded:     XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
+```
+
+### Base X
+
+A bespoke algorithm for arbitrary-width bit encoding. \
+Similar to (but **not _at all_ compatible** with) Base64. \
+Bit-width is based on the given alphabet's number of characters.
+
+### Base58
+
+A specific 58-character _Base X_ alphabet. \
+The same is used for DASH as most cryptocurrencies.
+
+```text
+123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
+```
+
+Chosen to eliminate confusion between similar characters. \
+(`0` and `O`, `1` and `l` and `I`, etc)
+
+### Base58Check
+
+A Base58 encoding schema with prefixes and suffixes. \
+`verisonBytes` is added as a prefix (before encoding). \
+Some _metadata_ may come before the data. \
+`checkBytes` are added as a suffix (before encoding). \
+
+```js
+Base58(`${versionBytes}${metaBytes}${dataBytes}${checkBytes}`);
+```
+
+See also [Address](#address), [Check](#check) and [WIF](#wif)
+
+### Check
+
+Also: Base58 Checksum, Base58 Hash, Base58 SHA-256
+
+The _last_ 4 bytes of a decoded WIF or Addr. \
+These are the _first_ 4 bytes of the SHA-256 Hash of the same.
+
+See [Address](#address) and [WIF](#wif).
+
+### Compressed Byte
+
+Also: Compression Flag, Recovery Bit, Y is Even / Odd Byte, Quadrant
+
+A private key always starts with `0x01`, the compression flag. \
+This indicates that Pub Key Hashes must not include the Y value.
+
+See also: [Public Key](#public-key).
+
+### HD Key
+
+Also: HD Wallet WIF
+
+An HD Key is a Private Key or WIF generated from an HD Wallet. \
+These are recoverable from a Passphrase "Mnemonic". \
+(HD means _Hierarchical-Deterministic_, as in "generated from seed")
+
+HD keys are almost always preferrable over non-HD keys.
+
+See [Dash HD][dashhd-js], [Dash Wallet][dashwallet-js].
+
+### Private Key
+
+Also: PrivKey
+
+Any 32 random bytes (256-bits) that can produce a valid Public Key. \
+The public key is produced by creating a point on a known curve.
+
+In essence:
+
+```js
+let privBuf = genRandom(32);
+let pirvHex = toHex(privBuf);
+let privNum = BigInt(`0x${privHex}`);
+
+// magic secp256k1 curve values
+let curveN =
+  0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+let Gx =
+  55066263022277343669578718895168534326250603453777594175500187360389116729240n;
+let Gy =
+  32670510020758816978083085130507043184471273380659243275938904335757337482424n;
+let windowSize = 8;
+
+let isWithinCurveOrder = 0n < privNum && privNum < curveN;
+if (!isWithinCurveOrder) {
+  throw new Error("not in curve order");
+}
+
+let BASE = new JacobianPoint(CURVE.Gx, CURVE.Gy, 1n);
+let jPoint = BASE.multiply(privNum, { Gx, Gy, windowSize }); // fancy math
+let pubPoint = jPoint.toAffine(); // fancy math
+
+let isOdd = pubPoint.y % 2n;
+let prefix = "02";
+if (isOdd) {
+  prefix = "03";
+}
+
+let x = pubPoint.x.toString(16).padStart(32, "0");
+let pubHex = `${prefix}${x}`;
+```
+
+See <https://github.com/dashhive/secp256k1.js>.
+
+### PubKey Hash
+
+Also: Public Key Hash, PKH, PubKeyHash
+
+The public key is hashed with SHA-256. \
+That result is hashed with RIPEMD-160.
+
+```text
+RIPEMD160(SHA256(PublicKey))
+```
+
+### Public Key
+
+Also: PubKey
+
+An 32-byte `X` value, prefixed with a byte describing the `Y` value. \
+The indicator is `0x02`, if `Y` is ever, or `0x03` if `Y` is odd. \
+
+In essence:
+
+```js
+let expectOdd = 0x03 === pubKey[0];
+let xBuf = pubKey.subarray(1);
+let xHex = toHex(xBuf);
+let x = BigInt(xHex);
+
+// magic secp256k1 curve values
+let a = 0n;
+let b = 7n;
+let P = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn;
+
+function mod(a, b = P) {
+  let result = a % b;
+  if (result >= 0n) {
+    return result;
+  }
+  return b + result;
+}
+let x2 = mod(x * x);
+let x3 = mod(x2 * x);
+let y2 = mod(x3 + a * x + b);
+
+let y = curveSqrtMod(y2); // very complicated
+let isYOdd = (y & 1n) === 1n;
+if (expectOdd && !isYOdd) {
+  y = mod(-y);
+}
+
+let pubPoint = { x: x, y: y };
+```
+
+See <https://github.com/dashhive/secp256k1.js>.
+
+### RIPEMD160
+
+An old, deprecated hash 20-byte algorithm - similar to MD5. \
+We're stuck with it for the foreseeable future. Oh, well.
+
+### Version
+
+Also: Base58Check Version, Coin Version, Privacy Byte
+
+`0xcc` is used for DASH mainnet WIFs (Private Key). \
+`0x4c` is the prefix for Payment Addresses (PubKey Hash) . \
+These bytes Base58Encode to `X`, (for mystery, i.e. "DarkCoin").
+
+`0xef` (Priv) and `0x8c` (PKH) are used for DASH testnet. \
+These Base58Encode to `Y`.
+
+For use with HD tools, this Base58Check codec also supports: \
+`0x0488ade4`, which Base58-encodes to the `xprv` prefix. \
+`0x0488b21e`, which Base58-encodes to the `xpub` prefix. \
+`0x04358394` and `0x043587cf`, which encode to `tprv` and `tpub`.
+
+See [Dash HD][dashhd-js] for more info about Extended Private Keys (`xprv`,
+`xpriv`) and Extended Public Keys (`xpub`).
+
+### WIF
+
+Also: Wallet Import Format, Paper Wallet, Swipe Key, Private Key QR
+
+A Base58Check-encoded Private Key. \
+(**CAN** be reversed into the Private Key) \
+The encoding is like this:
+
+- Coin Version Private byte(s), which is cc for DASH
+- Compression byte (always 0x01)
+- Private Key (32 bytes)
+- Checksum is 4 bytes of SHA-256(concat(coin, compression, pubkey))
+- Base58Check is Base85(concat(coin, compression, pubkey, checksum))
+
+```text
+Version:     cc
+Comp Byte:   01 (always)
+Private Key: 1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+Checksum:    ec533f80
+
+Decoded:     cc011d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950ec533f80
+
+Encoded:     XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
+```
+
+### Zoomonic
+
+The HD Wallet used for all testing fixtures in this ecosystem of code. \
+(chosen from the original Trezor / BIP-39 test fixtures)
+
+See [The Canonical Dash "Zoomonic"](#the-canonical-dash-zoomonic).
 
 ## Fixtures
 
-For troubleshooting, debugging, etc, the keys used in this example come from the
-canonical Dash "Zoomonic":
+For troubleshooting, debugging, etc.
+
+### The Canonical Dash "Zoomonic":
+
+All keys used in this example - and across this ecosystem of DASH tools - are HD
+keys derived from the "Zoomonic":
 
 ```txt
 Passphrase (Mnemonic)  :  zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong
 Secret (Salt Password) :  TREZOR
-HD Path                :  m/44'/5'/0'/0/0:
+HD Path                :  m/44'/5'/0'/0/0
 WIF                    :  XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
 Addr                   :  XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-### Correct PubKeyHash Values
+### Anatomy of Addrs & WIFs
 
 ```sh
 dashkeys inspect --unsafe ./examples/m44_5_0_0-0.wif
@@ -298,11 +557,11 @@ PubKey:       0245ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
 Pay Address:    XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-### Incorrect PubKeyHash (Uncompressed)
+### Troubleshooting Uncompressed Keys
 
-If you see these values, you've mistakenly used an uncompressed public key.
+If you see these values, then you've mistakenly used uncompressed keys.
 
-**Incorrect Private Key**
+**Incorrect Private Key** (Uncompressed)
 
 ```txt
 PrivateKey:   cc1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
@@ -315,7 +574,7 @@ WIF:             XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi4vf57Ka (00 comp f
                  7qmhzDpsoPHhYXBZ2f8igQeEgRSZXmWdoh9Wq6hgvAcDrD3Arhr (no comp flag)
 ```
 
-**Incorrect Pub Key Hash**
+**Incorrect Pub Key Hash** (Uncompressed)
 
 ```txt
 PubKey (X+Y): 04
@@ -332,6 +591,111 @@ PubKey (X+Y): 04
   Version:    4c
   --------
 Pay Address:  XqBBkSnvWMcLyyRRvH1S4mWH4f2zugr7Cd
+```
+
+## Implementation Details
+
+It also serves as a **reference implementation** for porting to **other
+platforms** such as modern **mobile** and **desktop** programming languages.
+
+As a reference implementation, it's valuable to **_understand_ that tedium**,
+here's a peek behind the curtain:
+
+- _Address_ ↔️ _PubKey Hash_
+- _WIF_ ↔️ _Private Key_
+- _Private Key_ ➡️ _Public Key_
+- _Public Key_ ➡️ _PubKey Hash_
+
+These are _simplified_ version of what's in the actual code: \
+ (removed error checking, etc, for clarity)
+
+```js
+let Base58Check = require("@dashincubator/base58check").Base58Check;
+
+// "dash58check" because we're using the Dash magic version bytes.
+let dash58check = Base58Check.create({
+  privateKeyVersion: "cc", // "ef" for dash testnet, "80" for bitcoin main
+  pubKeyHashVersion: "4c", // "8c" for dash testnet, "00" for bitcoin main
+});
+
+/**
+ * @param {String} addr
+ * @returns {Promise<Uint8Array>} - p2pkh (no magic byte or checksum)
+ */
+async function addrToPubKeyHash(addr) {
+  let b58cAddr = dash58check.decode(addr);
+  let pubKeyHash = toBytes(b58cAddr.pubKeyHash);
+  return pubKeyHash;
+}
+
+/**
+ * @param {Uint8Array} pubKeyHash - no magic byte or checksum
+ * @returns {Promise<String>} - Pay Addr
+ */
+async function pubKeyHashToAddr(pubKeyHash) {
+  let hex = toHex(pubKeyHash);
+  let addr = await dash58check.encode({ pubkeyHash: hex });
+  return addr;
+}
+
+/**
+ * @param {String} wif
+ * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
+ */
+async function wifToPrivateKey(wif) {
+  let b58cWif = dash58check.decode(wif);
+  let privateKey = toBytes(b58cWif.privateKey);
+  return privateKey;
+}
+
+/**
+ * @param {Uint8Array} privKey
+ * @returns {Promise<String>} - wif
+ */
+async function privateKeyToWif(privKey) {
+  let privateKey = toHex(privKey);
+
+  let wif = await dash58check.encode({ privateKey: privateKey });
+  return wif;
+}
+
+/**
+ * @param {String} addrOrWif
+ */
+async function decode(addrOrWif) {
+  let parts = await dash58check.decode(addrOrWif);
+  let check = await dash58check.checksum(parts);
+  let valid = parts.check === check;
+
+  parts.valid = valid;
+  //parts.privBytes = toBytes(parts.privateKey);
+  //parts.shaRipeBytes = toBytes(parts.pubKeyHash);
+
+  return parts;
+}
+
+/**
+ * @param {Uint8Array} buf
+ * @returns {String} - Pay Addr or WIF
+ * @throws {Error}
+ */
+async function encode(buf) {
+  let hex = toHex(buf);
+
+  if (32 === buf.length) {
+    return await dash58check.encode({
+      privateKey: hex,
+    });
+  }
+
+  if (20 === buf.length) {
+    return await dash58check.encode({
+      pubKeyHash: hex,
+    });
+  }
+
+  throw new Error("buffer length must be (PubKeyHash) or 32 (PrivateKey)");
+}
 ```
 
 # LICENSE
