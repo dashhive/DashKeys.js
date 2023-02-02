@@ -1,4 +1,5 @@
 *.wif
+!/examples/*.wif
 
 # Logs
 logs
