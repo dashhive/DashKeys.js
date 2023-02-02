@@ -25,7 +25,7 @@ dashkeys generate
 ```
 
 ```txt
-Saved new private key to './Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ.wif'
+Saved new private key to './XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9.wif'
 ```
 
 The name of the file is the Pay Addr (public key hash) and the contents are the
@@ -47,17 +47,18 @@ npm install --save dashkeys
 let DashKeys = require("dashkeys");
 
 let wif = await DashKeys.generate();
-// ex: "XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec"
+// ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
 
 let addr = await DashKeys.wifToAddr(wif);
-// ex: "Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ"
+// ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
 ```
 
 You can use `DashKeys.privateKeyToWif(privateKey)` to generate non-random WIFs:
 
 ```js
+// TODO
 let privateKey = Buffer.from(
-  "647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d",
+  "1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950",
   "hex",
 );
 let wif = await DashKeys.privateKeyToWif(privateKey);
@@ -84,10 +85,10 @@ async function main() {
   let DashKeys = window.DashKeys;
 
   let wif = await DashKeys.generate();
-  // ex: "XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec"
+  // ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
 
   let addr = await DashKeys.wifToAddr(wif);
-  // ex: "Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ"
+  // ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
 }
 
 main().catch(function (err) {
@@ -259,68 +260,94 @@ function hexToUint8Array(hex) {
 
 ## Fixtures
 
-For troubleshooting, debugging, etc:
-
-**Correct Values**
-
-- WIF: XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec
-- Pay Addr: Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ
+For troubleshooting, debugging, etc, the keys used in this example come from the
+canonical Dash "Zoomonic":
 
 ```txt
-WIF:             XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec (Base58Check)
-
-Private Parts:   cc647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d012dc0e59d
-      --------
-       Version:  cc
-       PrivKey:  647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d
-    Compressed:  01
-      Checksum:  2dc0e59d
-
-
-Compressed Pub:  0290940e7a082049ccfbf7999260ab9a6d88bcb34d57f6c6075e52dd7395ed7058
-      --------
-      Quadrant:  02
-        PubKey:  90940e7a082049ccfbf7999260ab9a6d88bcb34d57f6c6075e52dd7395ed7058
-        Sha256:  836eaaeef70089f38cbf878f6987a322260ad661f3c0fcaf9715834b5a5224c7
-        RipeMD:  63ba19d01e6cf812c01ca6a4041c3c04f2a4dfe9 (Pub Key Hash)
-
-
-Pub Key Hash:    4c63ba19d01e6cf812c01ca6a4041c3c04f2a4dfe99ec9cefd (Hex)
-       --------
-       Version:  4c
-          Hash:  63ba19d01e6cf812c01ca6a4041c3c04f2a4dfe9
-      Checksum:  9ec9cefd
-
-
-Pay Addr:        Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ (Base58Check)
+Passphrase (Mnemonic)  :  zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong
+Secret (Salt Password) :  TREZOR
+HD Path                :  m/44'/5'/0'/0/0:
+WIF                    :  XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
+Addr                   :  XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-**Incorrect Values**
+### Correct PubKeyHash Values
 
-These are the values you get for `{ compressed: false }`:
+```sh
+dashkeys inspect --unsafe ./examples/m44_5_0_0-0.wif
+```
 
 ```txt
-Private Parts:   cc647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d012dc0e59d
-      --------
-       Version:  cc
-       PrivKey:  647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d
-    Compressed:  (MISSING!)
-      Checksum:  (WRONG!)
+    Version:     cc
+    Private Key: 1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+    Compressed:  01
+    Pay Addr:    XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
+    Check:       ec533f80
+    Valid:       true
+```
 
-Uncompressed:   0490940e7a082049ccfbf7999260ab9a6d88bcb34d57f6c6075e52dd7395ed70581480b848f5a1e2fd61dd87a2815d90d2d118a46d666a7a559adab68b00e0dc1e
-      --------
-      Quadrant:  04 (WRONG!)
-             X:  90940e7a082049ccfbf7999260ab9a6d88bcb34d57f6c6075e52dd7395ed7058
-             Y:  1480b848f5a1e2fd61dd87a2815d90d2d118a46d666a7a559adab68b00e0dc1e
-      Sha256:    e1d11902550f530b33e4321f4f9044a67c3b9c38b6ed98accfaf0571067871d2
-      RipeMD:    30ad71f52c005b5444f94032dda84466ddaf87a0 (WRONG Pub Key Hash)
+**Correct Private Key**
 
-Pay Addr:        Xf8E3eA1Sh8vC29fxQVbET8cqfCRcmiQeA (WRONG)
-                 4c30ad71f52c005b5444f94032dda84466ddaf87a0dae0ce2f (WRONG)
-       --------
-       Version:  4c
-          Hash:  30ad71f52c005b5444f94032dda84466ddaf87a0 (WRONG)
-      Checksum:  dae0ce2f (WRONG)
+```txt
+PrivateKey:   cc011d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+  --------
+  Version:    cc
+  Comp Flag:  01 (Compressed)
+  Priv Key:   1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+  --------
+WIF:          XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
+```
+
+**Correct Pub Key Hash**
+
+```txt
+PubKey:       0245ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
+  --------
+  Comp Flag:  02 (Quadrant 2)
+  X:          45ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
+  SHA256:     8e5abfc42a6d7529b860ce2b4b8889380db893438dc96430f597ddb455e85fdd
+  *RMD160:    54408a877b83cb9706373918a430728f72f3d001 (*not used)
+  PubKeyHash: ae14c8728915b492d9d77813bd8fddd91ce70948
+  Check:      ce08541e
+  Version:    4c
+  --------
+Pay Address:    XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
+```
+
+### Incorrect PubKeyHash (Uncompressed)
+
+If you see these values, you've mistakenly used an uncompressed public key.
+
+**Incorrect Private Key**
+
+```txt
+PrivateKey:   cc1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+  --------
+  Version:    cc
+  Comp Flag:  missing, or 00 (Uncompressed)
+  Priv Key:   1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950
+  --------
+WIF:             XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi4vf57Ka (00 comp flag)
+                 7qmhzDpsoPHhYXBZ2f8igQeEgRSZXmWdoh9Wq6hgvAcDrD3Arhr (no comp flag)
+```
+
+**Incorrect Pub Key Hash**
+
+```txt
+PubKey (X+Y): 04
+              45ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
+              607c88b97231d7f1419c772a6c55d2ad6a7c478a66fdd28ac88c622383073d12
+  --------
+  Comp Flag:  04, or 'false' (uncompressed)
+  X:          45ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
+  Y:          607c88b97231d7f1419c772a6c55d2ad6a7c478a66fdd28ac88c622383073d12
+  SHA256:     85c03bf3ba5042d2e7a84f0fcc969a7753a91e9c5c299062e1fdf7e0506b5f66
+  *RMD160:    b9d17c4c4fb6307ba78c8d4853ed07bd7e4c9f5a (*not used)
+  PubKeyHash: 9eee08ab54036069e5aaa15dcb204baa0fae622d
+  Check:      d38b9fd2
+  Version:    4c
+  --------
+Pay Address:  XqBBkSnvWMcLyyRRvH1S4mWH4f2zugr7Cd
 ```
 
 # LICENSE
