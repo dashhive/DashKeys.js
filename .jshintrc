@@ -1,9 +1,3 @@
-
-
-
-
-
-
 {
   "browser": true,
   "node": true,
@@ -11,8 +5,7 @@
   "curly": true,
   "sub": true,
 
-  
-  "bitwise": true,
+  "bitwise": false,
   "eqeqeq": true,
   "forin": true,
   "freeze": true,
@@ -20,7 +13,7 @@
   "latedef": "nofunc",
   "nonbsp": true,
   "nonew": true,
-  "plusplus": true,
+  "plusplus": false,
   "undef": true,
   "unused": "vars",
   "strict": true,
