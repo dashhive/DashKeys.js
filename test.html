@@ -1,8 +1,6 @@
 Open the Inspector Console!
 
-<script src="https://unpkg.com/@dashincubator/base58check/base58check.js"></script>
 <script src="https://unpkg.com/@dashincubator/secp256k1/secp256k1.js"></script>
-<script src="https://unpkg.com/@dashincubator/ripemd160/ripemd160.js"></script>
 
 <!-- script src="https://unpkg.com/dashkeys/dashkeys.js"></script -->
 <script src="./dashkeys.js"></script>
@@ -11,20 +9,24 @@ Open the Inspector Console!
     "use strict";
 
     async function main() {
-      //let wif = await DashKeys.generate();
-      let privateHex =
-        "647f06cbd6569feaa4b6a1e400284057a95d27f4206ce38300ae88d44418160d";
-      let privateKey = DashKeys._hexToUint8Array(privateHex);
-      console.log("DEBUG Private Key:", privateHex);
+      let DashKeys = window.DashKeys;
+      let toBytes = DashKeys.utils.hexToBytes;
+      let toHex = DashKeys.utils.bytesToHex;
 
-      let checkWif = "XEez2HcUhEomZoxzgH7H3LxnRAkqF4kRCVE8mW9q4YSUV4yuADec";
-      let wif = await DashKeys.privateKeyToWif(privateKey);
+      let checkWif = "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK";
+
+      let privateHex =
+        "1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950";
+      console.log("DEBUG Private Key:", privateHex);
+      let privBytes = toBytes(privateHex);
+
+      let wif = await DashKeys.privKeyToWif(privBytes);
       if (wif !== checkWif) {
         throw new Error(`'${wif}' does not match the expected '${checkWif}'`);
       }
       console.log("DEBUG WIF:", wif);
 
-      let checkAddr = "Xjn9fksLacciynroVhMLKGXMqMJtzJNLvQ";
+      let checkAddr = "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9";
       let addr = await DashKeys.wifToAddr(wif);
       if (addr !== checkAddr) {
         throw new Error(`'${addr}' does not match the expected '${checkAddr}'`);
