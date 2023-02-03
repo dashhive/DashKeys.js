@@ -12,7 +12,7 @@ Address: XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 > Keys - suitable for learning DASH specs and protocols, and porting to other
 > languages.
 
-## Table of Contents
+# Table of Contents
 
 - 🚀 [Install](#install)
   - Terminal (CLI)
@@ -39,11 +39,11 @@ Address: XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 [dash-keys-cli]: https://github.com/dashhive/dashkeys-cli.js
 [dash-wallet-cli]: https://github.com/dashhive/dashwallet-cli.js
 
-## Install
+# Install
 
 Works in Command Line, Node, Bun, Bundlers, and Browsers
 
-### Terminal
+## Terminal
 
 ```sh
 npm install --location=global dashkeys-cli
@@ -94,7 +94,7 @@ main().catch(function (err) {
 });
 ```
 
-## Usage
+# Usage
 
 ```js
 let wif = await DashKeys.generateWifNonHd();
@@ -115,7 +115,7 @@ let wif = await DashKeys.privateKeyToWif(privateKey);
 let addr = await DashKeys.wifToAddr(wif);
 ```
 
-## API
+# API
 
 Dash Keys doesn't do anything that other Base58Check libraries don't do.
 
@@ -127,7 +127,7 @@ advantage of modern, cross-platform _JS-native APIs_, such as WebCrypto.
 the Base58Check codec is **used in practice** (rather than _everything_ it can
 theoretically be used for).
 
-### Common Conversions
+## Common Conversions
 
 ```js
 // Bi-Directional Conversions
@@ -145,7 +145,7 @@ await DashKeys.pubKeyToPkh(pubBytes); // shaRipeBytes Uint8Array
 **Note**: these all output either Base58Check Strings, or Byte Arrays
 (Uint8Array).
 
-### Common Encode / Decode Options
+## Common Encode / Decode Options
 
 ```js
 {
@@ -158,7 +158,7 @@ await DashKeys.pubKeyToPkh(pubBytes); // shaRipeBytes Uint8Array
 }
 ```
 
-### Debugging Encoder / Decoder
+## Debugging Encoder / Decoder
 
 ```js
 // Base58Check Codec for all of Private Key and PubKey Hash (and X Keys)
@@ -187,7 +187,7 @@ await DashKeys.encodeKey(keyBytes, { version }); // Base58Check-encoded key
 **note**: `compressed` only applies to Private Keys and is _always_ `true`. \
 Remains in for compatibility, but not used.
 
-### Helpful Helper Utils
+## Helpful Helper Utils
 
 ```js
 // Byte Utils (NOT async)
@@ -202,7 +202,7 @@ await DashKeys.utils.ripemd160sum(bytes); // hash bytes Uint8Array
 await DashKeys.utils.sha256sum(bytes); // hash bytes Uint8Array
 ```
 
-### Swappable Secp256k1 Utils
+## Swappable Secp256k1 Utils
 
 We felt it was important to **not strictly depend** on _our_ chosen
 **secp256k1** implementation. \
@@ -240,7 +240,7 @@ DashKeys.utils.toPublicKey = async function (privBytes) {
 };
 ```
 
-## Glossary
+# Glossary
 
 Here are bunches of terms by their canonical name, as well as a terse
 description.
@@ -260,7 +260,7 @@ description.
 - [WIF](#wif)
 - [Zoomonic](#zoomonic)
 
-### Address
+## Address
 
 Also: Payment Address, Pay Addr, Addr
 
@@ -283,13 +283,13 @@ Decoded:     ccae14c8728915b492d9d77813bd8fddd91ce70948ce08541e
 Encoded:     XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-### Base X
+## Base X
 
 A bespoke algorithm for arbitrary-width bit encoding. \
 Similar to (but **not _at all_ compatible** with) Base64. \
 Bit-width is based on the given alphabet's number of characters.
 
-### Base58
+## Base58
 
 A specific 58-character _Base X_ alphabet. \
 The same is used for DASH as most cryptocurrencies.
@@ -301,7 +301,7 @@ The same is used for DASH as most cryptocurrencies.
 Chosen to eliminate confusion between similar characters. \
 (`0` and `O`, `1` and `l` and `I`, etc)
 
-### Base58Check
+## Base58Check
 
 A Base58 encoding schema with prefixes and suffixes. \
 `verisonBytes` is added as a prefix (before encoding). \
@@ -314,7 +314,7 @@ Base58(`${versionBytes}${metaBytes}${dataBytes}${checkBytes}`);
 
 See also [Address](#address), [Check](#check) and [WIF](#wif)
 
-### Check
+## Check
 
 Also: Base58 Checksum, Base58 Hash, Base58 SHA-256
 
@@ -323,7 +323,7 @@ These are the _first_ 4 bytes of the SHA-256 Hash of the same.
 
 See [Address](#address) and [WIF](#wif).
 
-### Compressed Byte
+## Compressed Byte
 
 Also: Compression Flag, Recovery Bit, Y is Even / Odd Byte, Quadrant
 
@@ -332,7 +332,7 @@ This indicates that Pub Key Hashes must not include the Y value.
 
 See also: [Public Key](#public-key).
 
-### HD Key
+## HD Key
 
 Also: HD Wallet WIF
 
@@ -344,7 +344,7 @@ HD keys are almost always preferrable over non-HD keys.
 
 See [Dash HD][dashhd-js], [Dash Wallet][dashwallet-js].
 
-### Private Key
+## Private Key
 
 Also: PrivKey
 
@@ -388,7 +388,7 @@ let pubHex = `${prefix}${x}`;
 
 See <https://github.com/dashhive/secp256k1.js>.
 
-### PubKey Hash
+## PubKey Hash
 
 Also: Public Key Hash, PKH, PubKeyHash
 
@@ -399,7 +399,7 @@ That result is hashed with RIPEMD-160.
 RIPEMD160(SHA256(PublicKey))
 ```
 
-### Public Key
+## Public Key
 
 Also: PubKey
 
@@ -441,12 +441,12 @@ let pubPoint = { x: x, y: y };
 
 See <https://github.com/dashhive/secp256k1.js>.
 
-### RIPEMD160
+## RIPEMD160
 
 An old, deprecated hash 20-byte algorithm - similar to MD5. \
 We're stuck with it for the foreseeable future. Oh, well.
 
-### Version
+## Version
 
 Also: Base58Check Version, Coin Version, Privacy Byte
 
@@ -465,7 +465,7 @@ For use with HD tools, this Base58Check codec also supports: \
 See [Dash HD][dashhd-js] for more info about Extended Private Keys (`xprv`,
 `xpriv`) and Extended Public Keys (`xpub`).
 
-### WIF
+## WIF
 
 Also: Wallet Import Format, Paper Wallet, Swipe Key, Private Key QR
 
@@ -490,18 +490,18 @@ Decoded:     cc011d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb95
 Encoded:     XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
 ```
 
-### Zoomonic
+## Zoomonic
 
 The HD Wallet used for all testing fixtures in this ecosystem of code. \
 (chosen from the original Trezor / BIP-39 test fixtures)
 
 See [The Canonical Dash "Zoomonic"](#the-canonical-dash-zoomonic).
 
-## Fixtures
+# Fixtures
 
 For troubleshooting, debugging, etc.
 
-### The Canonical Dash "Zoomonic":
+## The Canonical Dash "Zoomonic":
 
 All keys used in this example - and across this ecosystem of DASH tools - are HD
 keys derived from the "Zoomonic":
@@ -514,7 +514,7 @@ WIF                    :  XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK
 Addr                   :  XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-### Anatomy of Addrs & WIFs
+## Anatomy of Addrs & WIFs
 
 ```sh
 dashkeys inspect --unsafe ./examples/m44_5_0_0-0.wif
@@ -557,7 +557,7 @@ PubKey:       0245ddd5edaa25313bb88ee0abd359f6f58ac38ed597d33a981f1799903633d902
 Pay Address:    XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9
 ```
 
-### Troubleshooting Uncompressed Keys
+## Troubleshooting Uncompressed Keys
 
 If you see these values, then you've mistakenly used uncompressed keys.
 
@@ -593,7 +593,7 @@ PubKey (X+Y): 04
 Pay Address:  XqBBkSnvWMcLyyRRvH1S4mWH4f2zugr7Cd
 ```
 
-## Implementation Details
+# Implementation Details
 
 It also serves as a **reference implementation** for porting to **other
 platforms** such as modern **mobile** and **desktop** programming languages.
