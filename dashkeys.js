@@ -29,6 +29,7 @@
  * @typedef {DashKeys}
  * @prop {Decode} decode
  * @prop {EncodeKeyUint8Array} encodeKey
+ * @prop {DashKeysUtils} utils
  */
 
 /**
