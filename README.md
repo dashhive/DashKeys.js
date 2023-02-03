@@ -104,8 +104,7 @@ let addr = await DashKeys.wifToAddr(wif);
 // ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
 ```
 
-You can use `DashKeys.privKeyToWif(privateKey)` to encode Private Keys to
-WIFs:
+You can use `DashKeys.privKeyToWif(privateKey)` to encode Private Keys to WIFs:
 
 ```js
 let privBuf = toBytes(
@@ -305,11 +304,11 @@ Chosen to eliminate confusion between similar characters. \
 
 A Base58 encoding schema with prefixes and suffixes. \
 `verisonBytes` is added as a prefix (before encoding). \
-Some _metadata_ may come before the data. \
+Some _metadata_ may come after the data. \
 `checkBytes` are added as a suffix (before encoding). \
 
 ```js
-Base58(`${versionBytes}${metaBytes}${dataBytes}${checkBytes}`);
+Base58(`${versionBytes}${dataBytes}${metaBytes}${checkBytes}`);
 ```
 
 See also [Address](#address), [Check](#check) and [WIF](#wif)
@@ -327,7 +326,7 @@ See [Address](#address) and [WIF](#wif).
 
 Also: Compression Flag, Recovery Bit, Y is Even / Odd Byte, Quadrant
 
-A private key always starts with `0x01`, the compression flag. \
+A Base58Check private key has the suffix `0x01`, the compression flag. \
 This indicates that Pub Key Hashes must not include the Y value.
 
 See also: [Public Key](#public-key).
@@ -476,8 +475,8 @@ The encoding is like this:
 - Coin Version Private byte(s), which is cc for DASH
 - Compression byte (always 0x01)
 - Private Key (32 bytes)
-- Checksum is 4 bytes of SHA-256(concat(coin, compression, pubkey))
-- Base58Check is Base85(concat(coin, compression, pubkey, checksum))
+- Checksum is 4 bytes of SHA-256(concat(coin, privkey, compression))
+- Base58Check is Base85(concat(coin, privkey, compression, checksum))
 
 ```text
 Version:     cc
