@@ -153,6 +153,11 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {Hasher} */
   Utils.sha256sum = async function (bytes) {
+    if (!Crypto.subtle) {
+      //@ts-ignore
+      let sha256 = Crypto.createHash("sha256").update(bytes).digest();
+      return new Uint8Array(sha256);
+    }
     let arrayBuffer = await Crypto.subtle.digest("SHA-256", bytes);
     let hashBytes = new Uint8Array(arrayBuffer);
     return hashBytes;
