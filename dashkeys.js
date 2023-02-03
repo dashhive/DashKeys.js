@@ -11,6 +11,12 @@
 /** @typedef {import('./base58check.types.js').Encode} Base58CheckEncode */
 /** @typedef {import('./base58check.types.js').EncodeHex} Base58CheckEncodeHex */
 /** @typedef {import('./base58check.types.js').EncodeParts} Base58CheckEncodeParts */
+/** @typedef {import('./base58check.types.js').Parts} Base58CheckParts */
+/** @typedef {import('./base58check.types.js').PrivateParts} Base58CheckPrivateParts */
+/** @typedef {import('./base58check.types.js').PubKeyHashParts} Base58CheckPubKeyHashParts */
+/** @typedef {import('./base58check.types.js').XPrvParts} Base58CheckXPrvParts */
+/** @typedef {import('./base58check.types.js').XPubParts} Base58CheckXPubParts */
+
 /** @typedef {import('./base58check.types.js').Verify} Base58CheckVerify */
 /** @typedef {import('./base58check.types.js').VerifyHex} Base58CheckVerifyHex */
 /** @typedef {import('./ripemd160.types.js').RIPEMD160} RIPEMD160 */
@@ -21,14 +27,18 @@
 
 /**
  * @typedef {DashKeys}
+ * @prop {Decode} decode
+ * @prop {EncodeKeyUint8Array} encodeKey
  */
 
 /**
  * @typedef DashKeysUtils
- * @prop {GetPublicKey} toPublicKey
- * @prop {HexToUint8Array} hexToUint8Array
- * @prop {Sha256sum} sha256sum
- * @prop {Uint8ArrayToHex} uint8ArrayToHex
+ * @prop {Uint8ArrayToHex} bytesToHex
+ * @prop {GenerateWif} generateWifNonHd
+ * @prop {HexToUint8Array} hexToBytes
+ * @prop {Hasher} ripemd160sum
+ * @prop {Hasher} sha256sum
+ * @prop {ToPublicKey} toPublicKey
  */
 
 /** @type {BaseX} */
@@ -43,81 +53,119 @@ var Base58Check = {};
 //@ts-ignore
 var RIPEMD160 = {};
 
+/** @typedef {"4c"} DASH_PKH */
+/** @typedef {"8c"} DASH_PKH_TESTNET */
+/** @typedef {"cc"} DASH_PRIV_KEY */
+/** @typedef {"ef"} DASH_PRIV_KEY_TESTNET */
+/** @typedef {"0488ade4"} XPRV */
+/** @typedef {"0488b21e"} XPUB */
+/** @typedef {"04358394"} TPRV */
+/** @typedef {"043587cf"} TPUB */
+/** @typedef {"mainnet"|"testnet"|DASH_PKH|DASH_PRIV_KEY|DASH_PKH_TESTNET|DASH_PRIV_KEY_TESTNET|"xprv"|"tprv"|"xpub"|"tpub"|XPRV|XPUB|TPRV|TPUB} VERSION */
+
+/** @typedef {"mainnet"|"cc"|"testnet"|"ef"} VERSION_PRIVATE */
+
 /** @type {DashKeys} */
 //@ts-ignore
 var DashKeys = ("object" === typeof module && exports) || {};
-(function (Window, DashKeys) {
+(function (Window, /** @type {DashKeys} */ _DashKeys) {
   "use strict";
 
-  let BASE58 = `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz`;
+  // generally the same across cryptocurrencies
+  const BASE58 = `123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz`;
+  // specific to DASH mainnet and testnet
+  const DASH_PKH = "4c";
+  const DASH_PKH_TESTNET = "8c";
+  const DASH_PRIV_KEY = "cc";
+  const DASH_PRIV_KEY_TESTNET = "ef";
+  // generally the same across coins for mainnet
+  const XPRV = "0488ade4";
+  const XPUB = "0488b21e";
+  // sometimes different for various coins on testnet
+  const TPRV = "04358394";
+  const TPUB = "043587cf";
+
   /** @type {typeof window.crypto} */
   let Crypto = Window.crypto || require("node:crypto");
   let Utils = {};
 
-  /**
-   * @param {Object} [opts]
-   * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
-   * @returns {Promise<String>}
-   */ /*
-  DashKeys.generate = async function (opts) {
-    /** @type {import('@dashincubator/secp256k1')} */ /*
-    let Secp256k1 =
-      //@ts-ignore
-      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
-
-    let privKey = Secp256k1.utils.randomPrivateKey();
-
-    let wif = await DashKeys.privateKeyToWif(privKey, opts);
-    return wif;
-  };
-  */
-
-  /** @type {HexToUint8Array} */
-  Utils.hexToUint8Array = function (hex) {
-    let len = hex.length / 2;
-    let buf = new Uint8Array(len);
-
-    let index = 0;
-    for (let i = 0; i < hex.length; i += 2) {
-      let c = hex.slice(i, i + 2);
-      let b = parseInt(c, 16);
-      buf[index] = b;
-      index += 1;
-    }
-
-    return buf;
-  };
-
-  /** @type {Sha256sum} */
-  Utils.sha256sum = async function (u8) {
-    let arrayBuffer = await Crypto.subtle.digest("SHA-256", u8);
-    let buf = new Uint8Array(arrayBuffer);
-    return buf;
-  };
-
-  /** @type {GetPublicKey} */
-  Utils.toPublicKey = function (privBuf) {
-    /** @type {import('@dashincubator/secp256k1')} */
-    let Secp256k1 =
-      //@ts-ignore
-      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
-
-    let isCompressed = true;
-    return Secp256k1.getPublicKey(privBuf, isCompressed);
-  };
-
   /** @type {Uint8ArrayToHex} */
-  Utils.uint8ArrayToHex = function (buf) {
+  Utils.bytesToHex = function (bytes) {
     /** @type {Array<String>} */
     let hex = [];
 
-    buf.forEach(function (b) {
+    bytes.forEach(function (b) {
       let h = b.toString(16);
       h = h.padStart(2, "0");
       hex.push(h);
     });
 
     return hex.join("");
+  };
+
+  /** @type {GenerateWif} */
+  Utils.generateWifNonHd = async function (opts) {
+    /** @type {import('@dashincubator/secp256k1')} */
+    let Secp256k1 =
+      //@ts-ignore
+      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
+
+    let privBytes = Secp256k1.utils.randomPrivateKey();
+    let privateKey = Utils.bytesToHex(privBytes);
+    let version = opts?.version ?? "";
+    switch (version) {
+      case "mainnet":
+        version = DASH_PRIV_KEY;
+        break;
+      case "testnet":
+        version = DASH_PRIV_KEY_TESTNET;
+        break;
+      default:
+      // no change
+    }
+
+    let wif = await _DashKeys._dash58check.encode({ privateKey, version });
+    return wif;
+  };
+
+  /** @type {HexToUint8Array} */
+  Utils.hexToBytes = function (hex) {
+    let len = hex.length / 2;
+    let bytes = new Uint8Array(len);
+
+    let index = 0;
+    for (let i = 0; i < hex.length; i += 2) {
+      let c = hex.slice(i, i + 2);
+      let b = parseInt(c, 16);
+      bytes[index] = b;
+      index += 1;
+    }
+
+    return bytes;
+  };
+
+  /** @type {Hasher} */
+  Utils.ripemd160sum = async function (bytes) {
+    let hashBytes = await RIPEMD160.hash(bytes);
+    return hashBytes;
+  };
+
+  /** @type {Hasher} */
+  Utils.sha256sum = async function (bytes) {
+    let arrayBuffer = await Crypto.subtle.digest("SHA-256", bytes);
+    let hashBytes = new Uint8Array(arrayBuffer);
+    return hashBytes;
+  };
+
+  /** @type {ToPublicKey} */
+  Utils.toPublicKey = async function (privBytes) {
+    /** @type {import('@dashincubator/secp256k1')} */
+    let Secp256k1 =
+      //@ts-ignore
+      Window.nobleSecp256k1 || require("@dashincubator/secp256k1");
+
+    let isCompressed = true;
+    return Secp256k1.getPublicKey(privBytes, isCompressed);
   };
 
   (function () {
@@ -295,18 +343,18 @@ var DashKeys = ("object" === typeof module && exports) || {};
     // See also:
     // - https://en.bitcoin.it/wiki/Base58Check_encoding
     // - https://appdevtools.com/base58-encoder-decoder
+    // - https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
+    // - https://docs.dash.org/en/stable/developers/testnet.html
 
     /** @type {Base58CheckCreate} */
     Base58Check.create = function (opts) {
       let dictionary = opts?.dictionary || BASE58;
       // See https://github.com/dashhive/dashkeys.js/blob/1f0f4e0d0aabf9e68d94925d660f00666f502391/dashkeys.js#L38
-      let pubKeyHashVersion = opts?.pubKeyHashVersion || "4c";
-      let privateKeyVersion = opts?.privateKeyVersion || "cc";
+      let privateKeyVersion = opts?.privateKeyVersion || DASH_PRIV_KEY;
+      let pubKeyHashVersion = opts?.pubKeyHashVersion || DASH_PKH;
       // From https://bitcoin.stackexchange.com/questions/38878/how-does-the-bip32-version-bytes-convert-to-base58
-      // 0x043587cf for testnet
-      let xpubVersion = opts?.xpubVersion || "0488b21e"; // base58-encoded "xpub..."
-      // 0x04358394 for testnet
-      let xprvVersion = opts?.xprvVersion || "0488ade4"; // base58-encoded "xprv..."
+      let xprvVersion = opts?.xprvVersion || XPRV; // base58-encoded "xprv..."
+      let xpubVersion = opts?.xpubVersion || XPUB; // base58-encoded "xpub..."
 
       let bs58 = BaseX.create(dictionary);
       let b58c = {};
@@ -336,12 +384,12 @@ var DashKeys = ("object" === typeof module && exports) || {};
        * @param {String} hex
        */
       b58c._checksumHexRaw = async function (hex) {
-        let buf = Utils.hexToUint8Array(hex);
+        let buf = Utils.hexToBytes(hex);
         let hash1 = await Utils.sha256sum(buf);
         let hash2 = await Utils.sha256sum(hash1);
 
         let last4 = hash2.slice(0, 4);
-        let check = Utils.uint8ArrayToHex(last4);
+        let check = Utils.bytesToHex(last4);
         return check;
       };
 
@@ -394,8 +442,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
       /** @type {Base58CheckVerify} */
       b58c.verify = async function (b58Addr, opts) {
-        let u8 = bs58.decode(b58Addr);
-        let hex = Utils.uint8ArrayToHex(u8);
+        let bytes = bs58.decode(b58Addr);
+        let hex = Utils.bytesToHex(bytes);
         return await b58c.verifyHex(hex, opts);
       };
 
@@ -417,8 +465,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
       /** @type {Base58CheckDecode} */
       b58c.decode = function (b58Addr) {
-        let u8 = bs58.decode(b58Addr);
-        let hex = Utils.uint8ArrayToHex(u8);
+        let bytes = bs58.decode(b58Addr);
+        let hex = Utils.bytesToHex(bytes);
         return b58c.decodeHex(hex);
       };
 
@@ -499,8 +547,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
         }
 
         let hex = await b58c.encodeHex(parts);
-        let u8 = Utils.hexToUint8Array(hex);
-        return bs58.encode(u8);
+        let bytes = Utils.hexToBytes(hex);
+        return bs58.encode(bytes);
       };
 
       /** @type {Base58CheckEncodeHex} */
@@ -526,8 +574,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
        */
       b58c._encodeXKey = async function (versionAndKeyHex) {
         let checkHex = await b58c._checksumHexRaw(versionAndKeyHex);
-        let u8 = Utils.hexToUint8Array(`${versionAndKeyHex}${checkHex}`);
-        return bs58.encode(u8);
+        let bytes = Utils.hexToBytes(`${versionAndKeyHex}${checkHex}`);
+        return bs58.encode(bytes);
       };
 
       /**
@@ -897,124 +945,377 @@ var DashKeys = ("object" === typeof module && exports) || {};
     }
   })();
 
-  // https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
-  // https://docs.dash.org/en/stable/developers/testnet.html
-  // "48" for mainnet, "8c" for testnet, '00' for bitcoin
-  //DashKeys.pubKeyHashVersion = "4c";
+  let dash58check = Base58Check.create();
+  //@ts-ignore
+  _DashKeys._dash58check = dash58check;
 
-  // "cc" for mainnet, "ef" for testnet, '80' for bitcoin
-  //DashKeys.privateKeyVersion = "cc";
+  /** @type {AddressToPubKeyHash} */
+  _DashKeys.addrToPkh = async function (address) {
+    let addrParts = await _DashKeys.decode(address);
+    let shaRipeBytes = Utils.hexToBytes(addrParts.pubKeyHash);
 
-  // https://dashcore.readme.io/docs/core-ref-transactions-address-conversion
-  // https://docs.dash.org/en/stable/developers/testnet.html
-  let b58c = Base58Check.create();
+    return shaRipeBytes;
+  };
 
-  /**
-   * @param {Uint8Array} privKey
-   * @param {Object} [opts]
-   * @param {String} [opts.version] - '8c' for testnet addrs, 'ef' for testnet wifs,
-   * @returns {Promise<String>}
-   */
-  DashKeys.privateKeyToWif = async function (privKey, opts) {
-    let privKeyHex = Utils.uint8ArrayToHex(privKey);
-    let decoded = {
-      version: opts?.version,
-      privateKey: privKeyHex,
-    };
+  // TODO type
+  /** @type {Decode} */
+  _DashKeys.decode = async function (keyB58c, opts) {
+    let parts = await dash58check.decode(keyB58c);
+    let check = await dash58check.checksum(parts);
+    let valid = parts.check === check;
+    if (!valid) {
+      if (false !== opts.validate) {
+        // to throw the inner error
+        await dash58check.verify(keyB58c);
+      }
+    }
+    parts.valid = valid;
 
-    let wif = await b58c.encode(decoded);
+    switch (parts.version) {
+      case DASH_PKH:
+      /* fallsthrough */
+      case DASH_PKH_TESTNET:
+        parts.type = "pkh";
+        break;
+      case DASH_PRIV_KEY:
+      /* fallsthrough */
+      case DASH_PRIV_KEY_TESTNET:
+        parts.type = "private";
+        break;
+      case XPRV:
+      /* fallsthrough */
+      case TPRV:
+        parts.type = "xprv";
+        break;
+      case XPUB:
+      /* fallsthrough */
+      case TPUB:
+        parts.type = "xpub";
+        break;
+      default:
+        throw new Error(`unknown version ${parts.version}`);
+    }
+
+    return parts;
+  };
+
+  // TODO parity with decode
+  /** @type {EncodeKeyUint8Array} */
+  _DashKeys.encodeKey = async function (keyBytes, opts) {
+    if (20 === keyBytes.length) {
+      return await _DashKeys._encodePkh(keyBytes, opts);
+    }
+
+    if (32 === keyBytes.length) {
+      return await _DashKeys._encodePrivKey(keyBytes, opts);
+    }
+
+    if (78 === keyBytes.length) {
+      return await _DashKeys._encodeXKey(keyBytes, opts);
+    }
+
+    throw new Error(
+      "key bytes length must be 20 (PubKeyHash), 32 (PrivateKey), or 78 (Extended Key)",
+    );
+  };
+
+  /** @type {EncodeKeyUint8Array} */
+  _DashKeys._encodePkh = async function (shaRipeBytes, opts) {
+    let pubKeyHash = Utils.bytesToHex(shaRipeBytes);
+    let version = opts?.version;
+
+    switch (version) {
+      case "mainnet":
+        version = DASH_PKH;
+        break;
+      case "testnet":
+        version = DASH_PKH_TESTNET;
+        break;
+      case DASH_PKH:
+        // keep as is
+        break;
+      case DASH_PKH_TESTNET:
+        // keep as is
+        break;
+      default:
+        throw new Error(
+          `Address (PubKey Hash) version must be "mainnet" ("${DASH_PKH}") or "testnet" ("${DASH_PKH_TESTNET}"), not '${version}'`,
+        );
+    }
+
+    let addr = await dash58check.encode({
+      pubKeyHash,
+      version,
+    });
+    return addr;
+  };
+
+  /** @type {EncodeKeyUint8Array} */
+  _DashKeys._encodePrivKey = async function (privBytes, opts) {
+    let privateKey = Utils.bytesToHex(privBytes);
+    let version = opts?.version;
+
+    switch (version) {
+      case "mainnet":
+        version = DASH_PRIV_KEY;
+        break;
+      case "testnet":
+        version = DASH_PRIV_KEY_TESTNET;
+        break;
+      case DASH_PRIV_KEY:
+        // keep as is
+        break;
+      case DASH_PRIV_KEY_TESTNET:
+        // keep as is
+        break;
+      default:
+        throw new Error(
+          `WIF (Private Key) version must be "mainnet" ("${DASH_PRIV_KEY}") or "testnet" ("${DASH_PRIV_KEY_TESTNET}"), not '${version}'`,
+        );
+    }
+
+    let wif = await dash58check.encode({
+      privateKey,
+      version,
+    });
     return wif;
   };
 
-  //
-  // Base58Check / Uint8Array Conversions
-  //
+  /** @type {EncodeKeyUint8Array} */
+  _DashKeys._encodeXKey = async function (xkeyBytes, opts) {
+    let xkey = Utils.bytesToHex(xkeyBytes);
+    let version = opts?.version;
 
-  /**
-   * @param {String} wif - private key
-   * @param {Object} [opts]
-   * @param {String} [opts.version]
-   * @returns {Promise<String>}
-   */
-  DashKeys.wifToAddr = async function (wif, opts) {
-    let privBuf = await DashKeys._wifToPrivateKey(wif);
+    let xprv;
+    let xpub;
+    switch (version) {
+      case "xprv":
+        version = XPRV;
+        xprv = xkey;
+        break;
+      case "tprv":
+        version = TPRV;
+        xprv = xkey;
+        break;
+      case "xpub":
+        version = XPUB;
+        xpub = xkey;
+        break;
+      case "tpub":
+        version = TPUB;
+        xpub = xkey;
+        break;
+      default:
+        throw new Error(
+          `cannot determine Extended Key (xkey) type from bytes length: please supply 'version' as 'xprv', 'xpub', 'tprv', or 'tpub'`,
+        );
+    }
 
-    let pubBuf = Utils.toPublicKey(privBuf);
-    let pubKeyHash = await DashKeys.publicKeyToPubKeyHash(pubBuf);
-    let pubKeyHashHex = Utils.uint8ArrayToHex(pubKeyHash);
-
-    let addr = await b58c.encode({
-      version: opts?.version,
-      pubKeyHash: pubKeyHashHex,
+    let xkeyB58c = await dash58check.encode({
+      version,
+      xprv,
+      xpub,
     });
+    return xkeyB58c;
+  };
+
+  /** @type {PubKeyHashToAddress} */
+  _DashKeys.pkhToAddr = async function (shaRipeBytes, opts) {
+    let pubKeyHash = Utils.bytesToHex(shaRipeBytes);
+    let version = opts?.version;
+
+    let addr = await dash58check.encode({
+      pubKeyHash,
+      version,
+    });
+    return addr;
+  };
+
+  /** @type {PrivateKeyToWif} */
+  _DashKeys.privKeyToWif = async function (privBytes, opts) {
+    let privateKey = Utils.bytesToHex(privBytes);
+    let version = opts?.version;
+
+    let wif = await dash58check.encode({
+      privateKey,
+      version,
+    });
+    return wif;
+  };
+
+  /** @type {PublicKeyToAddress} */
+  _DashKeys.pubKeyToAddr = async function (pubBytes, opts) {
+    let shaRipeBytes = await _DashKeys.pubKeyToPkh(pubBytes);
+    let addr = await _DashKeys.pkhToAddr(shaRipeBytes, opts);
 
     return addr;
   };
 
-  /**
-   * @param {String} wif - private key
-   * @returns {Promise<Uint8Array>}
-   */
-  DashKeys._wifToPrivateKey = async function (wif) {
-    let b58cWif = b58c.decode(wif);
-    let privateKey = Utils.hexToUint8Array(b58cWif.privateKey);
-    return privateKey;
-  };
-
   /** @type {PublicKeyToPubKeyHash} */
-  DashKeys.publicKeyToPubKeyHash = async function (buf) {
-    let shaBuf = await Utils.sha256sum(buf);
+  _DashKeys.pubKeyToPkh = async function (pubBytes) {
+    let shaBytes = await Utils.sha256sum(pubBytes);
+    let shaRipeBytes = await Utils.ripemd160sum(shaBytes);
 
-    let ripemd = RIPEMD160.create();
-    ripemd.update(shaBuf);
-    let hash = ripemd.digest();
-
-    return hash;
+    return shaRipeBytes;
   };
 
-  DashKeys.utils = Utils;
+  /** @type {WifToAddress} */
+  _DashKeys.wifToAddr = async function (wif) {
+    let privBytes = await _DashKeys.wifToPrivKey(wif);
+
+    let pubBytes = await Utils.toPublicKey(privBytes);
+    let pubKeyHash = await _DashKeys.pubKeyToPkh(pubBytes);
+    let pubKeyHashHex = Utils.bytesToHex(pubKeyHash);
+
+    let addr = await dash58check.encode({
+      pubKeyHash: pubKeyHashHex,
+    });
+    return addr;
+  };
+
+  /**
+   * @param {String} wif - Base58Check-encoded Private Key
+   * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
+   */
+  _DashKeys.wifToPrivKey = async function (wif) {
+    let wifParts = await dash58check.decode(wif);
+    let privBytes = Utils.hexToBytes(wifParts.privateKey);
+
+    return privBytes;
+  };
+
+  /**
+   * @callback PrivateKeyToWif
+   * @param {Uint8Array} privBytes
+   * @returns {Promise<String>} - wif
+   */
+
+  _DashKeys.utils = Utils;
 
   //@ts-ignore
-  Window.BaseX = DashKeys.BaseX = BaseX;
+  Window.BaseX = _DashKeys.BaseX = BaseX;
   //@ts-ignore
-  Window.Base58 = DashKeys.Base58 = BaseX;
+  Window.Base58 = _DashKeys.Base58 = BaseX;
   //@ts-ignore
-  Window.Base58Check = DashKeys.Base58Check = Base58Check;
+  Window.Base58Check = _DashKeys.Base58Check = Base58Check;
   //@ts-ignore
-  Window.RIPEMD160 = DashKeys.RIPEMD160 = RIPEMD160;
+  Window.RIPEMD160 = _DashKeys.RIPEMD160 = RIPEMD160;
 })(globalThis.window || /** @type {window} */ {}, DashKeys);
 if ("object" === typeof module) {
   module.exports = DashKeys;
 }
 
+// Type Aliases
+
+/** @typedef {String} HexString */
+
+// Type Definitions
+
 /**
- * @callback GetPublicKey
- * @param {Uint8Array} privBuf
- * @returns {Uint8Array} - the public key u8 buffer
+ * @callback AddressToPubKeyHash
+ * @param {String} addr - Base58Check encoded version + pkh + check
+ * @returns {Promise<Uint8Array>} - pkh bytes (no version or check, NOT Base58Check)
  */
 
 /**
- * Hex to JS Buffer that works for Little-Endian CPUs (ARM, x64, x86, WASM)
+ * @callback Decode
+ * @param {String} keyB58c - addr, wif, or xkey (xprv, xpub)
+ * @param {DecodeOpts} opts
+ * @returns {Promise<Base58CheckParts>}
+ */
+
+/**
+ * @typedef DecodeOpts
+ * @prop {Boolean} validate - throw if check fails, true by default
+ */
+
+/**
+ * @callback EncodeKeyUint8Array
+ * @param {Uint8Array} keyBytes - privKey, pkh, or xkey (xprv or xpub) bytes
+ * @param {EncodeKeyUint8ArrayOpts} opts
+ * @returns {Promise<String>} - Address or WIF (or Extended Key - xPrv or xPub)
+ * @throws {Error}
+ */
+
+/**
+ * @typedef EncodeKeyUint8ArrayOpts
+ * @prop {VERSION} version - needed for xprv and xpub, or testnet
+ */
+
+/**
+ * Developer Convenience function for Generating Non-HD (NON-RECOVERABLE) WIFs
+ * @callback GenerateWif
+ * @param {GenerateWifOpts} opts
+ * @returns {Promise<String>} - JS Bytes Buffer (Uint8Array, Node & Browsers)
+ */
+
+/**
+ * @typedef GenerateWifOpts
+ * @prop {VERSION_PRIVATE} version - "mainnet" ("cc") by default
+ */
+
+/**
+ * @callback Hasher
+ * @param {Uint8Array|Buffer} bytes
+ * @returns {Promise<Uint8Array>} - hash Uint8Array
+ */
+
+/**
+ * Hex to JS Bytes Buffer (Uint8Array)
  * @callback HexToUint8Array
  * @param {String} hex - hex
- * @returns {Uint8Array} - JS Uint8Array (Buffer for Node and Browsers)
+ * @returns {Uint8Array} - JS Bytes Buffer (Uint8Array, Node & Browsers)
+ */
+
+/**
+ * @callback PrivateKeyToWif
+ * @param {Uint8Array} privBytes
+ * @param {PrivateKeyToWifOpts} [opts]
+ * @returns {Promise<String>}
+ */
+
+/**
+ * @typedef PrivateKeyToWifOpts
+ * @prop {VERSION_PRIVATE} version - "mainnet" ("cc") by default
+ */
+
+/**
+ * @callback PubKeyHashToAddress
+ * @param {Uint8Array} shaRipeBytes - PubKey Hash (no magic byte or checksum)
+ * @param {EncodeKeyUint8ArrayOpts} opts - for version
+ * @returns {Promise<String>} - Address
+ */
+
+/**
+ * @callback PublicKeyToAddress
+ * @param {Uint8Array} pubBytes - Public Key Uint8Array
+ * @param {EncodeKeyUint8ArrayOpts} opts - for coin version
+ * @returns {Promise<String>} - Address
  */
 
 /**
  * @callback PublicKeyToPubKeyHash
- * @param {Uint8Array|Buffer} buf
- * @returns {Promise<Uint8Array>} - pubKeyHash buffer (no magic byte or checksum)
+ * @param {Uint8Array|Buffer} pubBytes - Public Key Uint8Array
+ * @returns {Promise<Uint8Array>} - pubKeyHash Uint8Array (no magic byte or checksum)
  */
 
 /**
- * @callback Sha256sum
- * @param {Uint8Array|Buffer} u8
- * @returns {Promise<Uint8Array>}
+ * @callback ToPublicKey
+ * @param {Uint8Array} privBytes - Private Key Uint8Array
+ * @returns {Promise<Uint8Array>} - Public Key Uint8Array
  */
 
 /**
- * JS Buffer to Hex
+ * JS Bytes Buffer (Uint8Array) to Hex
  * @callback Uint8ArrayToHex
- * @param {Uint8Array} buf
+ * @param {Uint8Array} bytes
  * @returns {String} - hex
+ */
+
+/**
+ * Converts a WIF-encoded PrivateKey to a PubKey Hash
+ * (of the same coin type, of course)
+ * @callback WifToAddress
+ * @param {String} wif - private key
+ * @returns {Promise<String>} - address
  */
