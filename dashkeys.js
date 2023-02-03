@@ -367,7 +367,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
         parts.compressed = true; // parts.compressed ?? true;
 
         //@ts-ignore
-        let key = parts.pubKeyHash || parts.privateKey;
+        let key = parts.pubKeyHash || parts.privateKey || parts.xprv || parts.xpub;
         let compression = "";
         //@ts-ignore
         if (parts.compressed && 64 === key.length) {
@@ -1011,12 +1011,12 @@ var DashKeys = ("object" === typeof module && exports) || {};
       return await _DashKeys._encodePrivKey(keyBytes, opts);
     }
 
-    if (78 === keyBytes.length) {
+    if (74 === keyBytes.length) {
       return await _DashKeys._encodeXKey(keyBytes, opts);
     }
 
     throw new Error(
-      "key bytes length must be 20 (PubKeyHash), 32 (PrivateKey), or 78 (Extended Key)",
+      `invalid key bytes length '${keyBytes.length}': must be 20 (PubKeyHash), 32 (PrivateKey), or 74 (Extended Key)`,
     );
   };
 
