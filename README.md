@@ -97,21 +97,21 @@ main().catch(function (err) {
 # Usage
 
 ```js
-let wif = await DashKeys.generateWifNonHd();
+let wif = await DashKeys.utils.generateWifNonHd();
 // ex: "XCGKuZcKDjNhx8DaNKK4xwMMNzspaoToT6CafJAbBfQTi57buhLK"
 
 let addr = await DashKeys.wifToAddr(wif);
 // ex: "XrZJJfEKRNobcuwWKTD3bDu8ou7XSWPbc9"
 ```
 
-You can use `DashKeys.privateKeyToWif(privateKey)` to encode Private Keys to
+You can use `DashKeys.privKeyToWif(privateKey)` to encode Private Keys to
 WIFs:
 
 ```js
 let privBuf = toBytes(
   "1d2a6b22fcb5a29a5357eaf27b1444c623e5e580b66ac5f1109e2778a0ffb950",
 );
-let wif = await DashKeys.privateKeyToWif(privateKey);
+let wif = await DashKeys.privKeyToWif(privateKey);
 let addr = await DashKeys.wifToAddr(wif);
 ```
 
