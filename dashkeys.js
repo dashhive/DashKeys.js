@@ -27,8 +27,16 @@
 
 /**
  * @typedef {DashKeys}
- * @prop {Decode} decode
+ * @prop {DecodeBase58Check} decode
  * @prop {EncodeKeyUint8Array} encodeKey
+ * @prop {AddressToPubKeyHash} addrToPkh
+ * @prop {PubKeyHashToAddress} pkhToAddr
+ * @prop {PrivateKeyToWif} privKeyToWif
+ * @prop {PrivateKeyToAddress} privKeyToAddr
+ * @prop {PublicKeyToAddress} pubkeyToAddr
+ * @prop {PublicKeyToPubKeyHash} pubkeyToPkh
+ * @prop {WifToAddress} wifToAddr
+ * @prop {WifToPrivateKey} wifToPrivKey
  * @prop {DashKeysUtils} utils
  */
 
@@ -963,7 +971,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
     return shaRipeBytes;
   };
 
-  /** @type {Decode} */
+  /** @type {DecodeBase58Check} */
   _DashKeys.decode = async function (keyB58c, opts) {
     let parts = await dash58check.decode(keyB58c);
     let check = await dash58check.checksum(parts);
@@ -1243,7 +1251,7 @@ if ("object" === typeof module) {
  */
 
 /**
- * @callback Decode
+ * @callback DecodeBase58Check
  * @param {String} keyB58c - addr, wif, or xkey (xprv, xpub)
  * @param {DecodeOpts} opts
  * @returns {Promise<Base58CheckParts>}
