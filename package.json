@@ -38,6 +38,6 @@
   },
   "homepage": "https://github.com/dashhive/dashkeys.js#readme",
   "devDependencies": {
-    "@dashincubator/secp256k1": "^1.7.1-2"
+    "@dashincubator/secp256k1": "^1.7.1-5"
   }
 }
