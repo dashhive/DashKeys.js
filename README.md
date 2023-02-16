@@ -58,7 +58,7 @@ See DashKey's CLI README at
 **Install**
 
 ```sh
-npm install --save dashkeys
+npm install --save dashkeys@1.x
 npm install --save @dashincubator/secp256k1@1.x
 ```
 
@@ -74,7 +74,7 @@ let toBytes = DashKeys.utils.hexToBytes;
 
 ```html
 <script src="https://unpkg.com/@dashincubator/secp256k1@1.x/secp256k1.js"></script>
-<script src="https://unpkg.com/dashkeys/dashkeys.js"></script>
+<script src="https://unpkg.com/dashkeys@1.x/dashkeys.js"></script>
 ```
 
 ```js
