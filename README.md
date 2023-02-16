@@ -132,13 +132,13 @@ theoretically be used for).
 // Bi-Directional Conversions
 await DashKeys.addrToPkh(address); // PubKey Hash Uint8Array (ShaRipeBytes)
 await DashKeys.pkhToAddr(hashBytes, { version }); // Address (Base58Check-encoded)
-await DashKeys.pubKeyToAddr(pubBytes); // Address (Base58Check-encoded)
+await DashKeys.pubkeyToAddr(pubBytes); // Address (Base58Check-encoded)
 await DashKeys.privKeyToWif(privBytes, { version }); // WIF (Base58Check-encoded)
 await DashKeys.wifToPrivKey(wif); // Private Key Uint8Array
 
 // One-Way Conversions
 await DashKeys.wifToAddr(wif); // Address (Base58Check-encoded)
-await DashKeys.pubKeyToPkh(pubBytes); // shaRipeBytes Uint8Array
+await DashKeys.pubkeyToPkh(pubBytes); // shaRipeBytes Uint8Array
 ```
 
 **Note**: these all output either Base58Check Strings, or Byte Arrays
@@ -408,8 +408,8 @@ The indicator is `0x02`, if `Y` is ever, or `0x03` if `Y` is odd. \
 In essence:
 
 ```js
-let expectOdd = 0x03 === pubKey[0];
-let xBuf = pubKey.subarray(1);
+let expectOdd = 0x03 === pubkey[0];
+let xBuf = pubkey.subarray(1);
 let xHex = toHex(xBuf);
 let x = BigInt(xHex);
 
@@ -621,7 +621,7 @@ let dash58check = Base58Check.create({
  * @param {String} addr
  * @returns {Promise<Uint8Array>} - p2pkh (no magic byte or checksum)
  */
-async function addrToPubKeyHash(addr) {
+async function addrToPkh(addr) {
   let b58cAddr = dash58check.decode(addr);
   let pubKeyHash = toBytes(b58cAddr.pubKeyHash);
   return pubKeyHash;
@@ -631,9 +631,9 @@ async function addrToPubKeyHash(addr) {
  * @param {Uint8Array} pubKeyHash - no magic byte or checksum
  * @returns {Promise<String>} - Pay Addr
  */
-async function pubKeyHashToAddr(pubKeyHash) {
+async function pkhToAddr(pubKeyHash) {
   let hex = toHex(pubKeyHash);
-  let addr = await dash58check.encode({ pubkeyHash: hex });
+  let addr = await dash58check.encode({ pubKeyHash: hex });
   return addr;
 }
 
@@ -641,7 +641,7 @@ async function pubKeyHashToAddr(pubKeyHash) {
  * @param {String} wif
  * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
  */
-async function wifToPrivateKey(wif) {
+async function wifToPrivKey(wif) {
   let b58cWif = dash58check.decode(wif);
   let privateKey = toBytes(b58cWif.privateKey);
   return privateKey;
@@ -651,7 +651,7 @@ async function wifToPrivateKey(wif) {
  * @param {Uint8Array} privKey
  * @returns {Promise<String>} - wif
  */
-async function privateKeyToWif(privKey) {
+async function privKeyToWif(privKey) {
   let privateKey = toHex(privKey);
 
   let wif = await dash58check.encode({ privateKey: privateKey });

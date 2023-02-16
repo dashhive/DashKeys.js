@@ -11,7 +11,7 @@ async function main() {
     "hex",
   );
 
-  let wif = await DashKeys.privateKeyToWif(privKey);
+  let wif = await DashKeys.privKeyToWif(privKey);
 
   let decoded = await dash58check.decode(wif);
   let encoded = await dash58check.encode(decoded);

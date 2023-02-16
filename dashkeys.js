@@ -1021,7 +1021,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
     }
 
     if (33 === keyBytes.length) {
-      let pkhBytes = await _DashKeys.pubKeyToPkh(keyBytes);
+      let pkhBytes = await _DashKeys.pubkeyToPkh(keyBytes);
       if (!opts.version) {
         opts.version = DASH_PKH;
       }
@@ -1169,15 +1169,15 @@ var DashKeys = ("object" === typeof module && exports) || {};
   };
 
   /** @type {PublicKeyToAddress} */
-  _DashKeys.pubKeyToAddr = async function (pubBytes, opts) {
-    let shaRipeBytes = await _DashKeys.pubKeyToPkh(pubBytes);
+  _DashKeys.pubkeyToAddr = async function (pubBytes, opts) {
+    let shaRipeBytes = await _DashKeys.pubkeyToPkh(pubBytes);
     let addr = await _DashKeys.pkhToAddr(shaRipeBytes, opts);
 
     return addr;
   };
 
   /** @type {PublicKeyToPubKeyHash} */
-  _DashKeys.pubKeyToPkh = async function (pubBytes) {
+  _DashKeys.pubkeyToPkh = async function (pubBytes) {
     let shaBytes = await Utils.sha256sum(pubBytes);
     let shaRipeBytes = await Utils.ripemd160sum(shaBytes);
 
@@ -1189,7 +1189,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
     let privBytes = await _DashKeys.wifToPrivKey(wif);
 
     let pubBytes = await Utils.toPublicKey(privBytes);
-    let pubKeyHash = await _DashKeys.pubKeyToPkh(pubBytes);
+    let pubKeyHash = await _DashKeys.pubkeyToPkh(pubBytes);
     let pubKeyHashHex = Utils.bytesToHex(pubKeyHash);
 
     let addr = await dash58check.encode({
