@@ -26,7 +26,7 @@
 /** @typedef {import('./ripemd160.types.js').Update} RIPEMD160Update */
 
 /**
- * @typedef {DashKeys}
+ * @typedef DashKeys
  * @prop {DecodeBase58Check} decode
  * @prop {EncodeKeyUint8Array} encodeKey
  * @prop {AddressToPubKeyHash} addrToPkh
@@ -1226,6 +1226,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
   _DashKeys.utils = Utils;
 
   //@ts-ignore
+  Window.DashKeys = _DashKeys;
+  //@ts-ignore
   Window.BaseX = _DashKeys.BaseX = BaseX;
   //@ts-ignore
   Window.Base58 = _DashKeys.Base58 = BaseX;
@@ -1278,7 +1280,7 @@ if ("object" === typeof module) {
 /**
  * Developer Convenience function for Generating Non-HD (NON-RECOVERABLE) WIFs
  * @callback GenerateWif
- * @param {GenerateWifOpts} opts
+ * @param {GenerateWifOpts} [opts]
  * @returns {Promise<String>} - JS Bytes Buffer (Uint8Array, Node & Browsers)
  */
 
