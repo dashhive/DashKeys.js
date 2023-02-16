@@ -488,7 +488,6 @@ var DashKeys = ("object" === typeof module && exports) || {};
           let xversion = addr.slice(0, xprvVersion.length);
           isXKey = xversions.includes(xversion);
           if (!isXKey) {
-            // TODO xkeys
             throw new Error(
               `[@dashincubator/base58check] expected pubKeyHash (or privateKey) to start with 0x${pubKeyHashVersion} (or 0x${privateKeyVersion}), not '0x${version}'`,
             );
@@ -964,7 +963,6 @@ var DashKeys = ("object" === typeof module && exports) || {};
     return shaRipeBytes;
   };
 
-  // TODO type
   /** @type {Decode} */
   _DashKeys.decode = async function (keyB58c, opts) {
     let parts = await dash58check.decode(keyB58c);
@@ -1006,18 +1004,38 @@ var DashKeys = ("object" === typeof module && exports) || {};
     return parts;
   };
 
-  // TODO parity with decode
   /** @type {EncodeKeyUint8Array} */
-  _DashKeys.encodeKey = async function (keyBytes, opts) {
+  _DashKeys.encodeKey = async function (keyBytes, opts = {}) {
     if (20 === keyBytes.length) {
+      if (!opts.version) {
+        opts.version = DASH_PKH;
+      }
       return await _DashKeys._encodePkh(keyBytes, opts);
     }
 
     if (32 === keyBytes.length) {
+      if (!opts.version) {
+        opts.version = DASH_PRIV_KEY;
+      }
       return await _DashKeys._encodePrivKey(keyBytes, opts);
     }
 
+    if (33 === keyBytes.length) {
+      let pkhBytes = await _DashKeys.pubKeyToPkh(keyBytes);
+      if (!opts.version) {
+        opts.version = DASH_PKH;
+      }
+      return await _DashKeys._encodePkh(pkhBytes, opts);
+    }
+
     if (74 === keyBytes.length) {
+      if (!opts.version) {
+        if (0x00 === keyBytes[41]) {
+          opts.version = XPRV;
+        } else {
+          opts.version = XPUB;
+        }
+      }
       return await _DashKeys._encodeXKey(keyBytes, opts);
     }
 
@@ -1239,14 +1257,14 @@ if ("object" === typeof module) {
 /**
  * @callback EncodeKeyUint8Array
  * @param {Uint8Array} keyBytes - privKey, pkh, or xkey (xprv or xpub) bytes
- * @param {EncodeKeyUint8ArrayOpts} opts
+ * @param {EncodeKeyUint8ArrayOpts} [opts]
  * @returns {Promise<String>} - Address or WIF (or Extended Key - xPrv or xPub)
  * @throws {Error}
  */
 
 /**
  * @typedef EncodeKeyUint8ArrayOpts
- * @prop {VERSION} version - needed for xprv and xpub, or testnet
+ * @prop {VERSION} [version] - needed for xprv and xpub, or testnet
  */
 
 /**
@@ -1296,7 +1314,7 @@ if ("object" === typeof module) {
 /**
  * @callback PublicKeyToAddress
  * @param {Uint8Array} pubBytes - Public Key Uint8Array
- * @param {EncodeKeyUint8ArrayOpts} opts - for coin version
+ * @param {EncodeKeyUint8ArrayOpts} [opts] - for coin version
  * @returns {Promise<String>} - Address
  */
 
