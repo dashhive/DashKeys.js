@@ -95,7 +95,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
   const TPUB = "043587cf";
 
   /** @type {typeof window.crypto} */
-  let Crypto = Window.crypto || require("node:crypto");
+  let Crypto = globalThis.crypto;
   let Utils = {};
 
   /** @type {Uint8ArrayToHex} */
