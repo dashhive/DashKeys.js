@@ -125,13 +125,23 @@ module.exports._types = true;
 /**
  * @callback Decode
  * @param {String} base58check - WIF, Payment Address, xPrv, or xPub
+ * @param {Object} opts
+ * @param {[String, String]} opts.versions
+ * @param {[String, String]} opts.xversions
  * @returns {Parts}
  */
 
 /**
  * @callback DecodeHex
  * @param {String} hex - magic version bytes + data + checksum
+ * @param {DecodeOpts} [opts]
  * @returns {Parts}
+ */
+
+/**
+ * @typedef DecodeOpts
+ * @prop {[String, String]} [versions]
+ * @prop {[String, String]} [xversions]
  */
 
 /**
@@ -153,6 +163,8 @@ module.exports._types = true;
 /**
  * @typedef VerifyOpts
  * @prop {Boolean} [verify] - set 'false' to set 'valid' false rather than throw
+ * @param {[String, String]} [versions]
+ * @param {[String, String]} [xversions]
  */
 
 /**

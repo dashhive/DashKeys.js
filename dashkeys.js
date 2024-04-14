@@ -457,14 +457,14 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
       /** @type {Base58CheckVerify} */
       b58c.verify = async function (b58Addr, opts) {
-        let bytes = bs58.decode(b58Addr);
+        let bytes = bs58.decode(b58Addr, opts);
         let hex = Utils.bytesToHex(bytes);
         return await b58c.verifyHex(hex, opts);
       };
 
       /** @type {Base58CheckVerifyHex} */
       b58c.verifyHex = async function (base58check, opts) {
-        let parts = b58c.decodeHex(base58check);
+        let parts = b58c.decodeHex(base58check, opts);
         let check = await b58c.checksum(parts);
         let valid = parts.check === check;
 
@@ -479,17 +479,17 @@ var DashKeys = ("object" === typeof module && exports) || {};
       };
 
       /** @type {Base58CheckDecode} */
-      b58c.decode = function (b58Addr) {
+      b58c.decode = function (b58Addr, opts) {
         let bytes = bs58.decode(b58Addr);
         let hex = Utils.bytesToHex(bytes);
-        return b58c.decodeHex(hex);
+        return b58c.decodeHex(hex, opts);
       };
 
       /** @type {Base58CheckDecodeHex} */
-      b58c.decodeHex = function (addr) {
+      b58c.decodeHex = function (addr, opts) {
         let version = addr.slice(0, privateKeyVersion.length);
-        let versions = [pubKeyHashVersion, privateKeyVersion];
-        let xversions = [xpubVersion, xprvVersion];
+        let versions = opts?.versions || [pubKeyHashVersion, privateKeyVersion];
+        let xversions = opts?.xversions || [xpubVersion, xprvVersion];
         let isXKey = false;
 
         if (!versions.includes(version)) {
@@ -516,7 +516,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
         let rawAddr = addr.slice(version.length, -8);
         if (50 === addr.length) {
           return {
-            version: version,
+            version: opts?.version || version,
             pubKeyHash: rawAddr,
             check: addr.slice(-8),
           };
@@ -525,20 +525,20 @@ var DashKeys = ("object" === typeof module && exports) || {};
         if (isXKey) {
           if (version === xprvVersion) {
             return {
-              version: version,
+              version: opts?.version || version,
               xprv: rawAddr,
               check: addr.slice(-8),
             };
           }
           return {
-            version: version,
+            version: opts?.version || version,
             xpub: rawAddr,
             check: addr.slice(-8),
           };
         }
 
         return {
-          version: version,
+          version: opts?.version || version,
           privateKey: rawAddr.slice(0, 64),
           compressed: true, // "01" === rawAddr.slice(64),
           check: addr.slice(-8),
@@ -964,8 +964,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
   _DashKeys._dash58check = dash58check;
 
   /** @type {AddressToPubKeyHash} */
-  _DashKeys.addrToPkh = async function (address) {
-    let addrParts = await _DashKeys.decode(address);
+  _DashKeys.addrToPkh = async function (address, opts) {
+    let addrParts = await _DashKeys.decode(address, opts);
     let shaRipeBytes = Utils.hexToBytes(addrParts.pubKeyHash);
 
     return shaRipeBytes;
@@ -973,13 +973,78 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {DecodeBase58Check} */
   _DashKeys.decode = async function (keyB58c, opts) {
-    let parts = await dash58check.decode(keyB58c);
+    console.log("################ found it!");
+
+    let _opts = {};
+    if (opts?.version) {
+      switch (opts.version) {
+        case XPRV:
+        /* fallsthrough */
+        case "xprv":
+        /* fallsthrough */
+        case 0x0488ade4:
+        /* fallsthrough */
+        case XPUB:
+        /* fallsthrough */
+        case "xpub":
+        /* fallsthrough */
+        case 0x0488b21e:
+        /* fallsthrough */
+        case DASH_PRIV_KEY:
+        /* fallsthrough */
+        case 0xcc:
+        /* fallsthrough */
+        case DASH_PKH:
+        /* fallsthrough */
+        case 0x4c:
+        /* fallsthrough */
+        case "mainnet":
+          Object.assign(_opts, {
+            versions: [DASH_PKH, DASH_PRIV_KEY],
+            xversions: [XPRV, XPUB],
+          });
+          break;
+
+        case TPRV:
+        /* fallsthrough */
+        case "tprv":
+        /* fallsthrough */
+        case 0x04358394:
+        /* fallsthrough */
+        case TPUB:
+        /* fallsthrough */
+        case "tpub":
+        /* fallsthrough */
+        case 0x043587cf:
+        /* fallsthrough */
+        case DASH_PRIV_KEY_TESTNET:
+        /* fallsthrough */
+        case 0xef:
+        /* fallsthrough */
+        case DASH_PKH_TESTNET:
+        /* fallsthrough */
+        case 0x8c:
+        /* fallsthrough */
+        case "testnet":
+          Object.assign(_opts, {
+            versions: [DASH_PKH_TESTNET, DASH_PRIV_KEY_TESTNET],
+            xversions: [TPRV, TPUB],
+          });
+          break;
+        default:
+          throw new Error(`unknown version ${opts.version}`);
+      }
+    }
+    if (opts.versions) {
+      Object.assign(_opts, opts);
+    }
+    let parts = await dash58check.decode(keyB58c, _opts);
     let check = await dash58check.checksum(parts);
     let valid = parts.check === check;
     if (!valid) {
       if (false !== opts.validate) {
         // to throw the inner error
-        await dash58check.verify(keyB58c);
+        await dash58check.verify(keyB58c, _opts);
       }
     }
     parts.valid = valid;
@@ -1193,8 +1258,9 @@ var DashKeys = ("object" === typeof module && exports) || {};
   };
 
   /** @type {WifToAddress} */
-  _DashKeys.wifToAddr = async function (wif) {
+  _DashKeys.wifToAddr = async function (wif, opts) {
     let privBytes = await _DashKeys.wifToPrivKey(wif);
+    let version = opts?.version;
 
     let pubBytes = await Utils.toPublicKey(privBytes);
     let pubKeyHash = await _DashKeys.pubkeyToPkh(pubBytes);
@@ -1202,6 +1268,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
     let addr = await dash58check.encode({
       pubKeyHash: pubKeyHashHex,
+      version: version,
     });
     return addr;
   };
@@ -1262,6 +1329,8 @@ if ("object" === typeof module) {
 /**
  * @typedef DecodeOpts
  * @prop {Boolean} validate - throw if check fails, true by default
+ * @prop {Array<VERSION|Number>} [versions]
+ * @prop {VERSION|Number} [version]
  */
 
 /**
