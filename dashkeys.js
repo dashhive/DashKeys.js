@@ -973,8 +973,6 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {DecodeBase58Check} */
   _DashKeys.decode = async function (keyB58c, opts) {
-    console.log("################ found it!");
-
     let _opts = {};
     if (opts?.version) {
       switch (opts.version) {
@@ -1035,7 +1033,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
           throw new Error(`unknown version ${opts.version}`);
       }
     }
-    if (opts.versions) {
+    if (opts?.versions) {
       Object.assign(_opts, opts);
     }
     let parts = await dash58check.decode(keyB58c, _opts);
