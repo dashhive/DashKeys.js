@@ -42,6 +42,7 @@
   "homepage": "https://github.com/dashhive/dashkeys.js#readme",
   "devDependencies": {
     "@dashincubator/base58check": "^1.4.1",
-    "@dashincubator/secp256k1": "^1.7.1-5"
+    "@dashincubator/secp256k1": "^1.7.1-5",
+    "@types/node": "^20.12.7"
   }
 }
