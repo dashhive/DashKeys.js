@@ -119,15 +119,13 @@ module.exports._types = true;
 /**
  * @callback Checksum
  * @param {Parts|EncodeParts} parts - private key or public hash or xkey parts
- * @returns {String} - 8 hex chars (4 bytes) of checksum
+ * @returns {Promise<String>} - 8 hex chars (4 bytes) of checksum
  */
 
 /**
  * @callback Decode
  * @param {String} base58check - WIF, Payment Address, xPrv, or xPub
- * @param {Object} opts
- * @param {[String, String]} opts.versions
- * @param {[String, String]} opts.xversions
+ * @param {DecodeOpts} opts
  * @returns {Parts}
  */
 
@@ -148,7 +146,7 @@ module.exports._types = true;
  * @callback Verify
  * @param {String} base58check - WIF, Payment Address, xPrv, or xPub
  * @param {VerifyOpts} [opts]
- * @returns {Parts}
+ * @returns {Promise<Parts>}
  * @throws {Error}
  */
 
@@ -156,25 +154,24 @@ module.exports._types = true;
  * @callback VerifyHex
  * @param {String} hex - magic version bytes + data + checksum
  * @param {VerifyOpts} [opts]
- * @returns {Parts}
+ * @returns {Promise<Parts>}
  * @throws {Error}
  */
 
 /**
- * @typedef VerifyOpts
+ * @typedef {DecodeOpts & VerifyOptsPartial} VerifyOpts
+ * @typedef VerifyOptsPartial
  * @prop {Boolean} [verify] - set 'false' to set 'valid' false rather than throw
- * @param {[String, String]} [versions]
- * @param {[String, String]} [xversions]
  */
 
 /**
  * @callback Encode
  * @param {EncodeParts} parts
- * @returns {String} - base58check WIF, Payment Address, xPrv, or xPub
+ * @returns {Promise<String>} - base58check WIF, Payment Address, xPrv, or xPub
  */
 
 /**
  * @callback EncodeHex
  * @param {EncodeParts} parts
- * @returns {String} - hex magic version bytes + key + checksum
+ * @returns {Promise<String>} - hex magic version bytes + key + checksum
  */

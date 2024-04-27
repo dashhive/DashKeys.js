@@ -4,6 +4,7 @@
 /** @typedef {import('./base-x.types.js').DecodeUnsafe} BaseXDecodeUnsafe */
 /** @typedef {import('./base-x.types.js').Encode} BaseXEncode */
 /** @typedef {import('./base58check.types.js').Base58Check} Base58Check */
+/** @typedef {import('./base58check.types.js').base58Check} Base58CheckInstance */
 /** @typedef {import('./base58check.types.js').Checksum} Base58CheckChecksum */
 /** @typedef {import('./base58check.types.js').Create} Base58CheckCreate */
 /** @typedef {import('./base58check.types.js').Decode} Base58CheckDecode */
@@ -37,6 +38,8 @@
  * @prop {WifToAddress} wifToAddr
  * @prop {WifToPrivateKey} wifToPrivKey
  * @prop {DashKeysUtils} utils
+ * @prop {EncodeKeyUint8Array} _encodeXKey
+ * @prop {Base58CheckInstance} _dash58check
  */
 
 /**
@@ -456,7 +459,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
       /** @type {Base58CheckVerify} */
       b58c.verify = async function (b58Addr, opts) {
-        let bytes = bs58.decode(b58Addr, opts);
+        let bytes = bs58.decode(b58Addr);
         let hex = Utils.bytesToHex(bytes);
         return await b58c.verifyHex(hex, opts);
       };
@@ -964,6 +967,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {AddressToPubKeyHash} */
   _DashKeys.addrToPkh = async function (address, opts) {
+    /** @type {Base58CheckPubKeyHashParts} */
+    //@ts-ignore - address has pkh parts
     let addrParts = await _DashKeys.decode(address, opts);
     let shaRipeBytes = Utils.hexToBytes(addrParts.pubKeyHash);
 
@@ -972,6 +977,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {DecodeBase58Check} */
   _DashKeys.decode = async function (keyB58c, opts) {
+    /* jshint maxcomplexity:35 */
     let _opts = {};
     if (opts?.version) {
       switch (opts.version) {
@@ -1039,7 +1045,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
     let check = await dash58check.checksum(parts);
     let valid = parts.check === check;
     if (!valid) {
-      if (false !== opts.validate) {
+      if (false !== opts?.validate) {
         // to throw the inner error
         await dash58check.verify(keyB58c, _opts);
       }
@@ -1220,7 +1226,11 @@ var DashKeys = ("object" === typeof module && exports) || {};
   /** @type {PublicKeyToAddress} */
   _DashKeys.pubkeyToAddr = async function (pubBytes, opts) {
     let shaRipeBytes = await _DashKeys.pubkeyToPkh(pubBytes);
-    let addr = await _DashKeys.pkhToAddr(shaRipeBytes, opts);
+    let addr = await _DashKeys.pkhToAddr(
+      shaRipeBytes,
+      //@ts-ignore - has version property
+      opts,
+    );
 
     return addr;
   };
@@ -1276,6 +1286,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
   /**
    * @callback PrivateKeyToWif
    * @param {Uint8Array} privBytes
+   * @param {EncodeKeyUint8ArrayOpts} [opts]
    * @returns {Promise<String>} - wif
    */
 
@@ -1305,13 +1316,14 @@ if ("object" === typeof module) {
 /**
  * @callback AddressToPubKeyHash
  * @param {String} addr - Base58Check encoded version + pkh + check
+ * @param {DecodeOpts} [opts]
  * @returns {Promise<Uint8Array>} - pkh bytes (no version or check, NOT Base58Check)
  */
 
 /**
  * @callback DecodeBase58Check
  * @param {String} keyB58c - addr, wif, or xkey (xprv, xpub)
- * @param {DecodeOpts} opts
+ * @param {DecodeOpts} [opts]
  * @returns {Promise<Base58CheckParts>}
  */
 
