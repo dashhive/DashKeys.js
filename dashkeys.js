@@ -32,7 +32,6 @@
  * @prop {AddressToPubKeyHash} addrToPkh
  * @prop {PubKeyHashToAddress} pkhToAddr
  * @prop {PrivateKeyToWif} privKeyToWif
- * @prop {PrivateKeyToAddress} privKeyToAddr
  * @prop {PublicKeyToAddress} pubkeyToAddr
  * @prop {PublicKeyToPubKeyHash} pubkeyToPkh
  * @prop {WifToAddress} wifToAddr
@@ -516,7 +515,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
         let rawAddr = addr.slice(version.length, -8);
         if (50 === addr.length) {
           return {
-            version: opts?.version || version,
+            version: version,
             pubKeyHash: rawAddr,
             check: addr.slice(-8),
           };
@@ -525,20 +524,20 @@ var DashKeys = ("object" === typeof module && exports) || {};
         if (isXKey) {
           if (version === xprvVersion) {
             return {
-              version: opts?.version || version,
+              version: version,
               xprv: rawAddr,
               check: addr.slice(-8),
             };
           }
           return {
-            version: opts?.version || version,
+            version: version,
             xpub: rawAddr,
             check: addr.slice(-8),
           };
         }
 
         return {
-          version: opts?.version || version,
+          version: version,
           privateKey: rawAddr.slice(0, 64),
           compressed: true, // "01" === rawAddr.slice(64),
           check: addr.slice(-8),
@@ -1081,14 +1080,18 @@ var DashKeys = ("object" === typeof module && exports) || {};
       if (!opts.version) {
         opts.version = DASH_PKH;
       }
-      return await _DashKeys._encodePkh(keyBytes, opts);
+      return await _DashKeys.pkhToAddr(keyBytes, opts);
     }
 
     if (32 === keyBytes.length) {
       if (!opts.version) {
         opts.version = DASH_PRIV_KEY;
       }
-      return await _DashKeys._encodePrivKey(keyBytes, opts);
+      return await _DashKeys.privKeyToWif(
+        keyBytes,
+        //@ts-ignore - is private key opts (see above)
+        opts,
+      );
     }
 
     if (33 === keyBytes.length) {
@@ -1096,7 +1099,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
       if (!opts.version) {
         opts.version = DASH_PKH;
       }
-      return await _DashKeys._encodePkh(pkhBytes, opts);
+      return await _DashKeys.pkhToAddr(pkhBytes, opts);
     }
 
     if (74 === keyBytes.length) {
@@ -1115,69 +1118,6 @@ var DashKeys = ("object" === typeof module && exports) || {};
     );
   };
 
-  /** @type {EncodeKeyUint8Array} */
-  _DashKeys._encodePkh = async function (shaRipeBytes, opts) {
-    let pubKeyHash = Utils.bytesToHex(shaRipeBytes);
-    let version = opts?.version;
-
-    switch (version) {
-      case "mainnet":
-        version = DASH_PKH;
-        break;
-      case "testnet":
-        version = DASH_PKH_TESTNET;
-        break;
-      case DASH_PKH:
-        // keep as is
-        break;
-      case DASH_PKH_TESTNET:
-        // keep as is
-        break;
-      default:
-        throw new Error(
-          `Address (PubKey Hash) version must be "mainnet" ("${DASH_PKH}") or "testnet" ("${DASH_PKH_TESTNET}"), not '${version}'`,
-        );
-    }
-
-    let addr = await dash58check.encode({
-      pubKeyHash,
-      version,
-    });
-    return addr;
-  };
-
-  /** @type {EncodeKeyUint8Array} */
-  _DashKeys._encodePrivKey = async function (privBytes, opts) {
-    let privateKey = Utils.bytesToHex(privBytes);
-    let version = opts?.version;
-
-    switch (version) {
-      case "mainnet":
-        version = DASH_PRIV_KEY;
-        break;
-      case "testnet":
-        version = DASH_PRIV_KEY_TESTNET;
-        break;
-      case DASH_PRIV_KEY:
-        // keep as is
-        break;
-      case DASH_PRIV_KEY_TESTNET:
-        // keep as is
-        break;
-      default:
-        throw new Error(
-          `WIF (Private Key) version must be "mainnet" ("${DASH_PRIV_KEY}") or "testnet" ("${DASH_PRIV_KEY_TESTNET}"), not '${version}'`,
-        );
-    }
-
-    let wif = await dash58check.encode({
-      privateKey,
-      version,
-    });
-    return wif;
-  };
-
-  /** @type {EncodeKeyUint8Array} */
   _DashKeys._encodeXKey = async function (xkeyBytes, opts) {
     let xkey = Utils.bytesToHex(xkeyBytes);
     let version = opts?.version;
@@ -1220,6 +1160,25 @@ var DashKeys = ("object" === typeof module && exports) || {};
     let pubKeyHash = Utils.bytesToHex(shaRipeBytes);
     let version = opts?.version;
 
+    switch (version) {
+      case "mainnet":
+        version = DASH_PKH;
+        break;
+      case "testnet":
+        version = DASH_PKH_TESTNET;
+        break;
+      case DASH_PKH:
+        // keep as is
+        break;
+      case DASH_PKH_TESTNET:
+        // keep as is
+        break;
+      default:
+        throw new Error(
+          `Address (PubKey Hash) version must be "mainnet" ("${DASH_PKH}") or "testnet" ("${DASH_PKH_TESTNET}"), not '${version}'`,
+        );
+    }
+
     let addr = await dash58check.encode({
       pubKeyHash,
       version,
@@ -1231,6 +1190,25 @@ var DashKeys = ("object" === typeof module && exports) || {};
   _DashKeys.privKeyToWif = async function (privBytes, opts) {
     let privateKey = Utils.bytesToHex(privBytes);
     let version = opts?.version;
+
+    switch (version) {
+      case "mainnet":
+        version = DASH_PRIV_KEY;
+        break;
+      case "testnet":
+        version = DASH_PRIV_KEY_TESTNET;
+        break;
+      case DASH_PRIV_KEY:
+        // keep as is
+        break;
+      case DASH_PRIV_KEY_TESTNET:
+        // keep as is
+        break;
+      default:
+        throw new Error(
+          `WIF (Private Key) version must be "mainnet" ("${DASH_PRIV_KEY}") or "testnet" ("${DASH_PRIV_KEY_TESTNET}"), not '${version}'`,
+        );
+    }
 
     let wif = await dash58check.encode({
       privateKey,
@@ -1257,8 +1235,21 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {WifToAddress} */
   _DashKeys.wifToAddr = async function (wif, opts) {
-    let privBytes = await _DashKeys.wifToPrivKey(wif);
-    let version = opts?.version;
+    let version = opts?.version || "mainnet";
+
+    switch (version) {
+      case "mainnet":
+        version = DASH_PRIV_KEY;
+        break;
+      case "testnet":
+        version = DASH_PRIV_KEY_TESTNET;
+        break;
+      default:
+        let msg = `'version' must be "mainnet" or "testnet", not '${version}', or use priv => priv or pub => pub methods for more control`;
+        throw new Error(msg);
+    }
+
+    let privBytes = await _DashKeys.wifToPrivKey(wif, { version });
 
     let pubBytes = await Utils.toPublicKey(privBytes);
     let pubKeyHash = await _DashKeys.pubkeyToPkh(pubBytes);
@@ -1275,8 +1266,8 @@ var DashKeys = ("object" === typeof module && exports) || {};
    * @param {String} wif - Base58Check-encoded Private Key
    * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
    */
-  _DashKeys.wifToPrivKey = async function (wif) {
-    let wifParts = await dash58check.decode(wif);
+  _DashKeys.wifToPrivKey = async function (wif, opts) {
+    let wifParts = await dash58check.decode(wif, opts);
     let privBytes = Utils.hexToBytes(wifParts.privateKey);
 
     return privBytes;
@@ -1347,13 +1338,8 @@ if ("object" === typeof module) {
 /**
  * Developer Convenience function for Generating Non-HD (NON-RECOVERABLE) WIFs
  * @callback GenerateWif
- * @param {GenerateWifOpts} [opts]
+ * @param {PrivateKeyToWifOpts} [opts]
  * @returns {Promise<String>} - JS Bytes Buffer (Uint8Array, Node & Browsers)
- */
-
-/**
- * @typedef GenerateWifOpts
- * @prop {VERSION_PRIVATE} version - "mainnet" ("cc") by default
  */
 
 /**
@@ -1419,5 +1405,14 @@ if ("object" === typeof module) {
  * (of the same coin type, of course)
  * @callback WifToAddress
  * @param {String} wif - private key
+ * @param {PrivateKeyToWifOpts} [opts]
  * @returns {Promise<String>} - address
+ */
+
+/**
+ * Decodes a WIF-encoded PrivateKey to Bytes
+ * @callback WifToPrivateKey
+ * @param {String} wif - private key
+ * @param {PrivateKeyToWifOpts} [opts]
+ * @returns {Promise<Uint8Array>}
  */
