@@ -1195,7 +1195,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
   /** @type {PrivateKeyToWif} */
   _DashKeys.privKeyToWif = async function (privBytes, opts) {
     let privateKey = Utils.bytesToHex(privBytes);
-    let version = opts?.version;
+    let version = opts?.version || "mainnet";
 
     switch (version) {
       case "mainnet":
@@ -1245,21 +1245,35 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /** @type {WifToAddress} */
   _DashKeys.wifToAddr = async function (wif, opts) {
-    let version = opts?.version || "mainnet";
+    let versionCode = opts?.version || "mainnet";
+    /** @type {VERSION_PRIVATE} */
+    let privVersion = DASH_PRIV_KEY;
+    /** @type {VERSION} */
+    let pubVersion = DASH_PKH;
 
-    switch (version) {
+    switch (versionCode) {
+      case DASH_PRIV_KEY:
+      /* fallsthrough */
+      case DASH_PKH:
+      /* fallsthrough */
       case "mainnet":
-        version = DASH_PRIV_KEY;
+        privVersion = DASH_PRIV_KEY;
+        pubVersion = DASH_PKH;
         break;
+      case DASH_PKH_TESTNET:
+      /* fallsthrough */
+      case DASH_PRIV_KEY_TESTNET:
+      /* fallsthrough */
       case "testnet":
-        version = DASH_PRIV_KEY_TESTNET;
+        privVersion = DASH_PRIV_KEY_TESTNET;
+        pubVersion = DASH_PKH_TESTNET;
         break;
       default:
-        let msg = `'version' must be "mainnet" or "testnet", not '${version}', or use priv => priv or pub => pub methods for more control`;
+        let msg = `'version' must be "mainnet" or "testnet", not '${versionCode}', or use priv => priv or pub => pub methods for more control`;
         throw new Error(msg);
     }
 
-    let privBytes = await _DashKeys.wifToPrivKey(wif, { version });
+    let privBytes = await _DashKeys.wifToPrivKey(wif, { version: privVersion });
 
     let pubBytes = await Utils.toPublicKey(privBytes);
     let pubKeyHash = await _DashKeys.pubkeyToPkh(pubBytes);
@@ -1267,7 +1281,7 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
     let addr = await dash58check.encode({
       pubKeyHash: pubKeyHashHex,
-      version: version,
+      version: pubVersion,
     });
     return addr;
   };
@@ -1417,7 +1431,7 @@ if ("object" === typeof module) {
  * (of the same coin type, of course)
  * @callback WifToAddress
  * @param {String} wif - private key
- * @param {PrivateKeyToWifOpts} [opts]
+ * @param {EncodeKeyUint8ArrayOpts} [opts]
  * @returns {Promise<String>} - address
  */
 
