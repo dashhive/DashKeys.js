@@ -1288,10 +1288,12 @@ var DashKeys = ("object" === typeof module && exports) || {};
 
   /**
    * @param {String} wif - Base58Check-encoded Private Key
+   * @param {DecodeOpts} [opts]
    * @returns {Promise<Uint8Array>} - private key (no magic byte or checksum)
    */
   _DashKeys.wifToPrivKey = async function (wif, opts) {
-    let wifParts = await dash58check.decode(wif, opts);
+    let wifParts = await _DashKeys.decode(wif, opts);
+    //@ts-ignore - wifParts does have privateKey
     let privBytes = Utils.hexToBytes(wifParts.privateKey);
 
     return privBytes;
@@ -1343,7 +1345,7 @@ if ("object" === typeof module) {
 
 /**
  * @typedef DecodeOpts
- * @prop {Boolean} validate - throw if check fails, true by default
+ * @prop {Boolean} [validate] - throw if check fails, true by default
  * @prop {Array<VERSION|Number>} [versions]
  * @prop {VERSION|Number} [version]
  */
